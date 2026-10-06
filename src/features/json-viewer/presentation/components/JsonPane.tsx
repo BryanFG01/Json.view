@@ -11,15 +11,16 @@ import { TreeView } from "./TreeView";
 
 interface JsonPaneProps {
   doc: JsonDocumentVM;
+  label: string;
   className?: string;
 }
 
 /** Un panel completo: barra de acciones, editor o árbol, barra de estado y subida de archivos. */
-export function JsonPane({ doc, className = "" }: JsonPaneProps) {
+export function JsonPane({ doc, label, className = "" }: JsonPaneProps) {
   const { inputRef, ...files } = useFileTransfer({ text: doc.text, onLoad: doc.replace });
 
   return (
-    <section className={`flex min-h-0 min-w-0 flex-1 flex-col ${className}`}>
+    <section aria-label={label} className={`flex min-h-0 min-w-0 flex-1 flex-col ${className}`}>
       <Toolbar vm={doc.toolbar} onUpload={files.openPicker} onDownload={files.download} />
       <div
         className="relative min-h-0 flex-1"

@@ -1,5 +1,6 @@
-import type { IndentOption, JsonParseResult, JsonValue } from "../../domain/models/json";
+import type { IndentOption, JsonParseResult, JsonValue, SortOptions } from "../../domain/models/json";
 import { expandNestedJsonUseCase } from "../../application/useCases/expandNestedJson";
+import { sortJsonUseCase } from "../../application/useCases/sortJson";
 import {
   escapeJsonUseCase,
   formatJsonUseCase,
@@ -29,6 +30,7 @@ export function createJsonActions({ parsed, indent, replace }: JsonActionsParams
     format: () => apply((v) => formatJsonUseCase(v, indent)),
     formatWith: (nextIndent: IndentOption) => apply((v) => formatJsonUseCase(v, nextIndent)),
     expandNested: () => apply((v) => expandNestedJsonUseCase(v, indent)),
+    sort: (options: SortOptions) => apply((v) => sortJsonUseCase(v, options, indent)),
     minify: () => apply(minifyJsonUseCase),
     escape: () => apply(escapeJsonUseCase),
     unescape: () => apply((v) => unescapeJsonUseCase(v, indent)),

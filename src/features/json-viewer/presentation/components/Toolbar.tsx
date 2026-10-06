@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import type { JsonDocumentVM } from "../hooks/useJsonDocument";
 import { ModeTabs } from "./ModeTabs";
+import { SortMenu } from "./SortMenu";
 import { ToolbarButton } from "./ToolbarButton";
 
 const Divider = () => <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden />;
@@ -30,6 +31,7 @@ export function Toolbar({ vm, onUpload, onDownload }: ToolbarProps) {
         <Divider />
         <ToolbarButton icon={AlignLeft} label="Formatear (Shift+Alt+F)" onClick={vm.format} disabled={!vm.isValid} />
         <ToolbarButton icon={Layers} label="Analizar JSON anidado y formatear" onClick={vm.expandNested} disabled={!vm.isValid} />
+        <SortMenu disabled={!vm.isValid} onSort={vm.sort} />
         <ToolbarButton icon={Minimize2} label="Minificar" onClick={vm.minify} disabled={!vm.isValid} />
         <ToolbarButton icon={Quote} label="Escapar como string" onClick={vm.escape} disabled={!vm.isValid} />
         <ToolbarButton icon={Braces} label="Desescapar string a JSON" onClick={vm.unescape} disabled={!vm.canUnescape} />

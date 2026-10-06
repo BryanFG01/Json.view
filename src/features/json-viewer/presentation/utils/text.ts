@@ -19,8 +19,3 @@ export function formatBytes(bytes: number): string {
   }
   return `${unit === 0 ? value : value.toFixed(1)} ${UNITS[unit]}`;
 }
-
-/** Números de línea en un solo string (un único nodo de texto, aunque haya miles de líneas). */
-export function buildGutterText(lineCount: number): string {
-  return Array.from({ length: lineCount }, (_, i) => i + 1).join("\n");
-}

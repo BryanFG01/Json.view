@@ -1,6 +1,6 @@
 import type { IndentOption, JsonValue } from "../../domain/models/json";
 
-function toIndent(indent: IndentOption): string | number {
+export function toIndent(indent: IndentOption): string | number {
   return indent === "tab" ? "\t" : Number(indent);
 }
 
@@ -17,14 +17,6 @@ export function minifyJsonUseCase(value: JsonValue): string {
 /** Convierte el JSON en un string escapado (útil para pegarlo dentro de otro JSON o en código). */
 export function escapeJsonUseCase(value: JsonValue): string {
   return JSON.stringify(JSON.stringify(value));
-}
-
-/** Copia del valor con las claves de todos los objetos ordenadas alfabéticamente. */
-export function sortKeysDeep(value: JsonValue): JsonValue {
-  if (Array.isArray(value)) return value.map(sortKeysDeep);
-  if (value === null || typeof value !== "object") return value;
-  const keys = Object.keys(value).sort((a, b) => a.localeCompare(b));
-  return Object.fromEntries(keys.map((key) => [key, sortKeysDeep(value[key])]));
 }
 
 /** Al pegar: si el texto es JSON válido se devuelve formateado; si no, tal cual. */

@@ -41,9 +41,3 @@ export const DIFF_SIGN: Record<DiffCellKind, string> = {
   added: "+",
   empty: " ",
 };
-
-/** Métricas compartidas por textarea, capa de colores y numeración: deben coincidir al píxel. */
-export const EDITOR_LINE_HEIGHT_PX = 21;
-export const EDITOR_PADDING_TOP_PX = 12;
-export const EDITOR_TEXT_CLASS =
-  "m-0 font-mono text-[14px] leading-[21px] whitespace-pre [tab-size:2] pt-3";

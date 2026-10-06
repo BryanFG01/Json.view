@@ -1,9 +1,10 @@
 import type { LucideIcon } from "lucide-react";
+import type { MouseEvent } from "react";
 
 interface ToolbarButtonProps {
   icon: LucideIcon;
   label: string;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
   active?: boolean;
 }
