@@ -1,26 +1,67 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --border: #e4e5e9;
+  --hover: #ebecf0;
+  --fg: #1e1f22;
+  --muted: #6c707e;
+  --gutter: #9a9da6;
+  --accent: #3574f0;
+  --ok: #1a7f37;
+  --err: #d1242f;
+  --tok-key: #871094;
+  --tok-string: #067d17;
+  --tok-number: #1750eb;
+  --tok-keyword: #0033b3;
+  --tok-punct: #080808;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1e1f22;
+  --panel: #2b2d30;
+  --border: #393b40;
+  --hover: #393b40;
+  --fg: #dfe1e5;
+  --muted: #8c8f96;
+  --gutter: #6e7681;
+  --accent: #548af7;
+  --ok: #5fb865;
+  --err: #f75464;
+  --tok-key: #e08cd3;
+  --tok-string: #73cb7f;
+  --tok-number: #23d7e8;
+  --tok-keyword: #e7a17e;
+  --tok-punct: #cfd2da;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-border: var(--border);
+  --color-hover: var(--hover);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-gutter: var(--gutter);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-err: var(--err);
+  --color-tok-key: var(--tok-key);
+  --color-tok-string: var(--tok-string);
+  --color-tok-number: var(--tok-number);
+  --color-tok-keyword: var(--tok-keyword);
+  --color-tok-punct: var(--tok-punct);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
