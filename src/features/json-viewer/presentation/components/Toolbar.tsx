@@ -17,10 +17,12 @@ interface ToolbarProps {
 
 export function Toolbar({ vm, onUpload, onDownload }: ToolbarProps) {
   return (
-    <div className="flex h-11 shrink-0 items-center border-b border-border bg-panel">
+    // Si el panel es estrecho (móvil, tablet dividida), los botones siguen a las pestañas y bajan
+    // a la fila siguiente en vez de ocultarse (`contents` los hace hijos directos del contenedor).
+    <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-y-0.5 border-b border-border bg-panel pr-1">
       <ModeTabs mode={vm.mode} onChange={vm.setMode} />
       <Divider />
-      <nav className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto px-1 [scrollbar-width:none]" aria-label="Acciones">
+      <nav className="contents" aria-label="Acciones">
         <ToolbarButton icon={FileJson} label="Cargar ejemplo" onClick={vm.loadSample} />
         <ToolbarButton icon={Upload} label="Subir archivo" onClick={onUpload} />
         <ToolbarButton icon={Download} label="Descargar" onClick={onDownload} disabled={!vm.hasText} />

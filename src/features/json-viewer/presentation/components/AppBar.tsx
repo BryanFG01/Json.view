@@ -1,5 +1,4 @@
-import { Braces, Columns2, GitCompareArrows, Lock, Moon, Sun } from "lucide-react";
-import type { ReactNode } from "react";
+import { Braces, Columns2, GitCompareArrows, Lock, Moon, Sun, type LucideIcon } from "lucide-react";
 import type { Theme } from "@/shared/theme/theme";
 
 interface AppBarProps {
@@ -11,31 +10,40 @@ interface AppBarProps {
   toggleTheme: () => void;
 }
 
-function ToggleButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+interface ToggleButtonProps {
+  active: boolean;
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+}
+
+/** En pantallas pequeñas solo se ve el icono; el nombre sigue disponible por aria-label/title. */
+function ToggleButton({ active, icon: Icon, label, onClick }: ToggleButtonProps) {
   return (
     <button
       type="button"
       aria-pressed={active}
+      aria-label={label}
+      title={label}
       onClick={onClick}
-      className={`flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors ${active ? "bg-accent text-white" : "text-muted hover:bg-hover hover:text-fg"}`}
+      className={`flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold whitespace-nowrap transition-colors ${active ? "bg-accent text-white" : "text-muted hover:bg-hover hover:text-fg"}`}
     >
-      {children}
+      <Icon className="size-4 sm:size-3.5" />
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }
 
 export function AppBar(vm: AppBarProps) {
   return (
-    <header className="flex h-10 shrink-0 items-center gap-2 border-b border-border bg-bg px-3">
-      <span className="flex items-center gap-1.5 text-sm font-bold"><Braces className="size-4 text-accent" /> JSON Viewer</span>
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <ToggleButton active={vm.isSplit && !vm.isDiff} onClick={vm.toggleSplit}>
-        <Columns2 className="size-3.5" /> Dividir pantalla
-      </ToggleButton>
-      <ToggleButton active={vm.isDiff} onClick={vm.toggleDiff}>
-        <GitCompareArrows className="size-3.5" /> Comparar
-      </ToggleButton>
-      <span className="ml-auto hidden items-center gap-1.5 text-xs text-muted md:flex">
+    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-bg px-3">
+      <span className="flex shrink-0 items-center gap-1.5 text-sm font-bold whitespace-nowrap">
+        <Braces className="size-4 text-accent" /> JSON Viewer
+      </span>
+      <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden />
+      <ToggleButton active={vm.isSplit && !vm.isDiff} icon={Columns2} label="Dividir pantalla" onClick={vm.toggleSplit} />
+      <ToggleButton active={vm.isDiff} icon={GitCompareArrows} label="Comparar" onClick={vm.toggleDiff} />
+      <span className="ml-auto hidden items-center gap-1.5 text-xs text-muted lg:flex">
         <Lock className="size-3.5" /> Todo se procesa en tu navegador
       </span>
       <button
@@ -43,7 +51,7 @@ export function AppBar(vm: AppBarProps) {
         onClick={vm.toggleTheme}
         title={vm.theme === "dark" ? "Tema claro" : "Tema oscuro"}
         aria-label="Cambiar tema"
-        className="ml-auto grid size-7 place-items-center rounded text-muted hover:bg-hover hover:text-fg md:ml-0"
+        className="ml-auto grid size-8 shrink-0 place-items-center rounded text-muted hover:bg-hover hover:text-fg lg:ml-0"
       >
         {vm.theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
       </button>

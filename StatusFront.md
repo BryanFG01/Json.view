@@ -75,6 +75,15 @@ Qué lo hace posible:
 - **Edición**: validación con `useDeferredValue` (el teclado responde primero; las acciones re-validan el texto actual), historial de deshacer con tope de ~50 M caracteres, tamaño en bytes sin copiar el texto, sin recorrer el documento para sincronizar CodeMirror.
 - **Límite conocido**: con ~1 M de líneas cada tecla cuesta ~0,2 s (se copia el documento a React). Para ir más allá: Web Worker (tarea 7).
 
+## Responsive (revisado 2026-10-06)
+Revisado con capturas en iPhone 13 (vertical y horizontal) e iPad (vertical y horizontal): editor, menú Ordenar, pantalla dividida, Comparar y Árbol. Sin desbordes horizontales en ningún caso.
+- Barra superior: por debajo de `sm` solo iconos (nombre accesible por `aria-label`/`title`); el aviso de privacidad solo desde `lg`.
+- Barra de acciones: los botones siguen a las pestañas y bajan a otra fila si el panel es estrecho (máx. 2 filas), en lugar de esconderse tras un scroll.
+- Pantalla dividida: apilada solo en vertical estrecho; en horizontal (`landscape:`) o desde `md`, lado a lado.
+- Comparar: columnas de número y signo más estrechas en móvil.
+- Repetir la revisión: `npx tsx e2e/responsive.manual.mts <url> <carpeta>` (capturas + informe de desbordes).
+- El botón redondo "N" abajo a la izquierda es el indicador de desarrollo de Next.js; no aparece en producción.
+
 ## Hoja de ruta (una mejora por vez, con revisión entre cada una)
 Decisiones tomadas: CodeMirror 6 antes de la tarea 1 · árbol híbrido (`<details>` hasta ~5.000 nodos, virtualizado por encima) · e2e con Chromium descargado.
 
@@ -88,7 +97,7 @@ Decisiones tomadas: CodeMirror 6 antes de la tarea 1 · árbol híbrido (`<detai
 - [ ] 7. Web Worker para archivos > 5 MB (cancelable) + árbol virtualizado.
 - [ ] 8. Límites del enlace compartible (aviso ~8 KB, bloqueo ~2 MB).
 - [ ] 9. Vista Grafo.
-- [ ] 10. Accesibilidad y UX: teclado en el árbol, ARIA, paleta Ctrl+K, móvil.
+- [ ] 10. Accesibilidad y UX: teclado en el árbol, ARIA, paleta Ctrl+K (responsive móvil/tablet ya hecho).
 - [ ] 11. Exportar: .json, .min.json, string escapado, imprimir/PDF del árbol.
 - [ ] 12. Preferencias persistentes (sangría, tema, vista, split).
 - [ ] Logo en la barra superior (hoy usa el icono `{ }`).

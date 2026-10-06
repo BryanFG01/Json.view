@@ -21,7 +21,7 @@ function Tab({ selected, label, onClick }: { selected: boolean; label: string; o
 
 export function ModeTabs({ mode, onChange }: ModeTabsProps) {
   return (
-    <div role="tablist" className="flex h-full shrink-0">
+    <div role="tablist" className="flex h-11 shrink-0">
       <Tab label="Editor" selected={mode === "editor"} onClick={() => onChange("editor")} />
       <Tab label="Árbol" selected={mode === "tree"} onClick={() => onChange("tree")} />
     </div>
