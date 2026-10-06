@@ -1,3 +1,4 @@
+import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { cursorMatchingBracket, defaultKeymap } from "@codemirror/commands";
 import { json } from "@codemirror/lang-json";
 import { bracketMatching, codeFolding, foldGutter, foldKeymap, indentUnit } from "@codemirror/language";
@@ -49,7 +50,15 @@ function shortcuts(get: () => EditorCallbacks): Extension {
     { key: "Mod-Shift-z", run: run("onRedo") },
     { key: "Shift-Alt-f", run: run("onFormat") },
     { key: "Mod-Shift-\\", run: cursorMatchingBracket },
-    { key: "Tab", run: (view) => (view.dispatch(view.state.replaceSelection(INDENT)), true) },
+    {
+      key: "Tab",
+      run: (view) => {
+        view.dispatch(view.state.replaceSelection(INDENT));
+        return true;
+      },
+    },
+    // Backspace en `{|}` / `"|"` borra el par completo.
+    ...closeBracketsKeymap,
     ...foldKeymap,
     ...defaultKeymap,
   ]);
@@ -83,6 +92,8 @@ export function buildExtensions(get: () => EditorCallbacks, placeholderText: str
     highlightActiveLineGutter(),
     drawSelection(),
     bracketMatching(),
+    // Autocierre de { } [ ] y " ": al escribir la apertura se añade el cierre (y envuelve la selección).
+    closeBrackets(),
     bracketScopeField,
     indentUnit.of(INDENT),
     json(),

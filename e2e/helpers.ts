@@ -10,9 +10,11 @@ export async function typeJson(pane: Locator, text: string) {
   await pane.page().keyboard.insertText(text);
 }
 
-/** Texto actual del editor del panel, con saltos de línea. */
+/** Texto actual del editor del panel, con saltos de línea (sin el placeholder del editor vacío). */
 export async function editorText(pane: Locator): Promise<string> {
   return pane.locator(".cm-content").evaluate((el) =>
-    Array.from(el.querySelectorAll(".cm-line"), (line) => line.textContent ?? "").join("\n"),
+    Array.from(el.querySelectorAll(".cm-line"), (line) =>
+      line.querySelector(".cm-placeholder") ? "" : (line.textContent ?? ""),
+    ).join("\n"),
   );
 }
