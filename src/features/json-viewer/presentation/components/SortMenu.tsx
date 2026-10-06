@@ -4,6 +4,7 @@ import { ArrowDownAZ } from "lucide-react";
 import type { SortOptions } from "../../domain/models/json";
 import { useSortMenu } from "../hooks/useSortMenu";
 import { SORT_PRESETS } from "../utils/sortOptions.constants";
+import { TIPS } from "../utils/tooltips.constants";
 import { ToolbarButton } from "./ToolbarButton";
 
 interface SortMenuProps {
@@ -16,7 +17,7 @@ export function SortMenu({ disabled, onSort }: SortMenuProps) {
 
   return (
     <>
-      <ToolbarButton icon={ArrowDownAZ} label="Ordenar" onClick={menu.toggle} disabled={disabled} active={menu.isOpen} />
+      <ToolbarButton icon={ArrowDownAZ} tip={TIPS.sort} onClick={menu.toggle} disabled={disabled} active={menu.isOpen} />
       {menu.isOpen && (
         <>
           <button type="button" aria-label="Cerrar menú" className="fixed inset-0 z-20 cursor-default" onClick={menu.close} />

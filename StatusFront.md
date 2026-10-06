@@ -21,6 +21,7 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | presentation/editor | `cmExtensions.ts` | Extensiones de CodeMirror: numeración, plegado, atajos, pegar, `externalChange` |
 | | `cmTheme.ts` | Tema y colores de sintaxis con las variables CSS (claro/oscuro sin reconfigurar) |
 | | `cmErrorLine.ts` | Marca la línea del error de sintaxis (fondo + margen) |
+| | `cmBracketScope.ts` | Bloque { } / [ ] del cursor pintado en el margen (fuerte sobre una llave, suave dentro de un bloque) |
 | presentation/hooks | `useJsonViewer` | Hook de página: documento izquierdo/derecho, dividir pantalla, comparar, tema |
 | | `useJsonDocument` | Estado de un panel (historial, parseo, vista, sangría, acciones) |
 | | `useJsonEditor` → `useCodeMirror` | Monta CodeMirror como vista controlada por React; ir al error |
@@ -29,10 +30,10 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | | `useTextHistory` | Deshacer/rehacer (fuente de verdad del texto; agrupa pulsaciones seguidas) |
 | | `useTreeView`, `useTreeNode` | Árbol perezoso: cada nodo calcula y pinta sus hijos solo mientras está abierto |
 | | `useFileTransfer`, `useClipboard`, `useShareLink` | Subir/arrastrar/descargar, copiar, enlace compartible |
-| presentation/utils | `diffRows.ts` (filas sin colorear), `diffView.ts` (cambios + contexto, bloques iguales colapsados, máx. 2.000 filas), `highlight.ts` (colores en Comparar), `jsonTree.ts` (nodos perezosos, grupos de 100), `status.ts`, `text.ts`, `jsonActions.ts`, `shareLink.ts`, `fileIO.ts`, `sortOptions.constants.ts`, `*.constants.ts` | Funciones puras y constantes |
+| presentation/utils | `treeCopy.ts` (qué copia cada nodo del árbol), `diffRows.ts` (filas sin colorear), `diffView.ts` (cambios + contexto, bloques iguales colapsados, máx. 2.000 filas), `highlight.ts` (colores en Comparar), `jsonTree.ts` (nodos perezosos, grupos de 100), `status.ts`, `text.ts`, `jsonActions.ts`, `shareLink.ts`, `fileIO.ts`, `sortOptions.constants.ts`, `*.constants.ts` | Funciones puras y constantes |
 | presentation/components | `AppBar`, `JsonPane`, `Toolbar`, `SortMenu`, `ModeTabs`, `ToolbarButton`, `JsonEditor`, `ErrorBanner`, `TreeView`, `TreeNode`, `StatusBar`, `DiffView`, `DiffCell` | Solo vista |
 
-Compartido: `src/shared/theme/` (tema claro/oscuro con `useSyncExternalStore` + script anti-parpadeo cargado con `next/script` `beforeInteractive`).
+Compartido: `src/shared/tooltip/` (tooltip global: `tip.ts` posición y atributos `data-tip*`, `useTooltip.ts` escucha puntero/foco, `Tooltip.tsx` lo pinta; textos en `presentation/utils/tooltips.constants.ts`) · `src/shared/theme/` (tema claro/oscuro con `useSyncExternalStore` + script anti-parpadeo cargado con `next/script` `beforeInteractive`).
 
 App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (monta `JsonViewerPage`), `src/app/icon.png` (favicon: recorte cuadrado de `public/Logo.jpg`).
 
@@ -44,6 +45,9 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 ## Funcionalidades
 - Validación en vivo con línea/columna del error, línea marcada en rojo y botón "Ir al error".
 - **Plegado de bloques** (⌄ / › en el margen; atajos Ctrl+Shift+[ y Ctrl+Shift+]).
+- **Llaves emparejadas**: al pararse (clic o flechas) junto a `{ } [ ]` se resaltan la apertura y el cierre, y la columna de números se pinta del bloque completo (apertura/cierre intensos, intermedias suaves). Dentro de un bloque, marca suave del bloque que lo contiene. La barra de estado muestra "Bloque: líneas X–Y"; Ctrl+Shift+\ salta a la llave pareja. En bloques de más de 3.000 líneas solo se marcan apertura y cierre.
+- **Tooltips**: al pasar el ratón (o con foco de teclado) cada icono explica qué hace, con su atajo, y si está desactivado dice por qué. Aparecen en ~150 ms (al instante si ya hay uno abierto), se recolocan para no salirse de la pantalla y no se muestran en pantallas táctiles. Sustituyen al `title` nativo (lento y genérico).
+- **Copiar un nodo**: en el editor, botón "Copiar bloque" en la barra de estado (copia solo el `{ }` / `[ ]` del cursor, re-formateado con la sangría del panel). En el Árbol, botón de copiar en cada fila (al pasar el ratón; siempre visible en pantallas táctiles): objetos/arrays como JSON formateado, textos sin comillas, grupos `[100 … 199]` solo con su rango.
 - Formatear (2, 4 espacios o Tab), minificar, escapar/desescapar string JSON.
 - Analizar JSON anidado y formatear (botón de capas): convierte strings con JSON adentro en objetos.
 - Pegar en un editor vacío formatea automáticamente si es JSON válido.
@@ -119,7 +123,7 @@ E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 36/36 ✔ · `npm run test:e2e`: 10/10 ✔ · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
+- `npm test`: 49/49 ✔ · `npm run test:e2e`: 13/13 ✔ · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

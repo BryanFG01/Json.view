@@ -1,5 +1,6 @@
 "use client";
 
+import { Tooltip } from "@/shared/tooltip/Tooltip";
 import { AppBar } from "./components/AppBar";
 import { DiffView } from "./components/DiffView";
 import { JsonPane } from "./components/JsonPane";
@@ -11,6 +12,7 @@ export function JsonViewerPage() {
   return (
     <div className="flex h-dvh flex-col bg-bg text-fg">
       <AppBar {...vm.appBar} />
+      <Tooltip />
       {vm.isDiff ? (
         <DiffView {...vm.diff} />
       ) : (

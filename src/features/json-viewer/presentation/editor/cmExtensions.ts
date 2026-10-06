@@ -1,10 +1,11 @@
-import { defaultKeymap } from "@codemirror/commands";
+import { cursorMatchingBracket, defaultKeymap } from "@codemirror/commands";
 import { json } from "@codemirror/lang-json";
 import { bracketMatching, codeFolding, foldGutter, foldKeymap, indentUnit } from "@codemirror/language";
 import { Annotation, type Extension } from "@codemirror/state";
 import {
   drawSelection, EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers, placeholder,
 } from "@codemirror/view";
+import { bracketScopeField, type BracketScope } from "./cmBracketScope";
 import { errorLine } from "./cmErrorLine";
 import { editorTheme, jsonHighlighting } from "./cmTheme";
 
@@ -18,19 +19,27 @@ export interface EditorCallbacks {
   onUndo: () => void;
   onRedo: () => void;
   onFormat: () => void;
+  /** Bloque { } / [ ] donde está el cursor (para la barra de estado). */
+  onScopeChange: (scope: BracketScope | null) => void;
 }
+
+type ShortcutAction = "onUndo" | "onRedo" | "onFormat";
 
 const INDENT = "  ";
 
 function foldMarker(open: boolean): HTMLElement {
   const marker = document.createElement("span");
   marker.textContent = open ? "⌄" : "›";
-  marker.title = open ? "Plegar bloque" : "Desplegar bloque";
+  // Tooltip global (data-tip) en vez del `title` nativo, que tarda en aparecer.
+  marker.dataset.tip = open ? "Plegar bloque" : "Desplegar bloque";
+  marker.dataset.tipDesc = open ? "Oculta las líneas de este { } o [ ]." : "Muestra de nuevo las líneas ocultas.";
+  marker.dataset.tipKeys = open ? "Ctrl+Shift+[" : "Ctrl+Shift+]";
+  marker.setAttribute("aria-label", marker.dataset.tip);
   return marker;
 }
 
 function shortcuts(get: () => EditorCallbacks): Extension {
-  const run = (action: keyof Omit<EditorCallbacks, "onChange" | "onPasteIntoEmpty">) => () => {
+  const run = (action: ShortcutAction) => () => {
     get()[action]();
     return true;
   };
@@ -39,6 +48,7 @@ function shortcuts(get: () => EditorCallbacks): Extension {
     { key: "Mod-y", run: run("onRedo") },
     { key: "Mod-Shift-z", run: run("onRedo") },
     { key: "Shift-Alt-f", run: run("onFormat") },
+    { key: "Mod-Shift-\\", run: cursorMatchingBracket },
     { key: "Tab", run: (view) => (view.dispatch(view.state.replaceSelection(INDENT)), true) },
     ...foldKeymap,
     ...defaultKeymap,
@@ -50,6 +60,8 @@ function events(get: () => EditorCallbacks): Extension {
     EditorView.updateListener.of((update) => {
       const external = update.transactions.some((tr) => tr.annotation(externalChange));
       if (update.docChanged && !external) get().onChange(update.state.doc.toString());
+      const scope = update.state.field(bracketScopeField);
+      if (scope !== update.startState.field(bracketScopeField)) get().onScopeChange(scope.scope);
     }),
     EditorView.domEventHandlers({
       paste(event, view) {
@@ -71,6 +83,7 @@ export function buildExtensions(get: () => EditorCallbacks, placeholderText: str
     highlightActiveLineGutter(),
     drawSelection(),
     bracketMatching(),
+    bracketScopeField,
     indentUnit.of(INDENT),
     json(),
     jsonHighlighting,

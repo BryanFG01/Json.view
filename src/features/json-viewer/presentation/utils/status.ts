@@ -26,6 +26,12 @@ function describeResult(parsed: JsonParseResult): Pick<StatusSummary, "label" | 
   return { label: "JSON inválido", tone: "error", detail };
 }
 
+/** "Bloque: líneas 15–31" para el bloque { } / [ ] del cursor; null si no hay o es de una sola línea. */
+export function describeScope(scope: { openLine: number; closeLine: number } | null): string | null {
+  if (!scope || scope.openLine === scope.closeLine) return null;
+  return `Bloque: líneas ${scope.openLine}–${scope.closeLine}`;
+}
+
 export function buildStatus(text: string, parsed: JsonParseResult): StatusSummary {
   return {
     ...describeResult(parsed),

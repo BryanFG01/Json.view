@@ -1,6 +1,7 @@
 "use client";
 
 import type { JsonSyntaxError } from "../../domain/models/json";
+import type { BracketScope } from "../editor/cmBracketScope";
 import { useCodeMirror } from "./useCodeMirror";
 
 export interface JsonEditorProps {
@@ -13,6 +14,7 @@ export interface JsonEditorProps {
   onUndo: () => void;
   onRedo: () => void;
   onFormat: () => void;
+  onScopeChange: (scope: BracketScope | null) => void;
 }
 
 const PLACEHOLDER = "Pega, escribe o arrastra aquí tu JSON…";

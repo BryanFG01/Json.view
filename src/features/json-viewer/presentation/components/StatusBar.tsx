@@ -1,7 +1,10 @@
+import { Check, Copy } from "lucide-react";
 import type { IndentOption } from "../../domain/models/json";
 import type { JsonDocumentVM } from "../hooks/useJsonDocument";
 import { INDENT_OPTIONS } from "../utils/options.constants";
 import { TONE_CLASS } from "../utils/styles.constants";
+import { TIPS } from "../utils/tooltips.constants";
+import { tipAttrs } from "@/shared/tooltip/tip";
 
 export function StatusBar({ vm }: { vm: JsonDocumentVM["status"] }) {
   return (
@@ -10,9 +13,25 @@ export function StatusBar({ vm }: { vm: JsonDocumentVM["status"] }) {
         <span className="size-2 rounded-full bg-current" aria-hidden />
         {vm.label}
       </span>
-      {vm.detail && <span className="hidden truncate sm:inline">{vm.detail}</span>}
+      {vm.scopeLabel ? (
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-accent" {...tipAttrs(TIPS.scope)}>{vm.scopeLabel}</span>
+          <button
+            type="button"
+            onClick={vm.copyBlock}
+            aria-label={TIPS.copyBlock.title}
+            {...tipAttrs(TIPS.copyBlock)}
+            className={`flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 font-semibold hover:bg-hover ${vm.blockCopied ? "text-ok" : "text-fg"}`}
+          >
+            {vm.blockCopied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+            <span className="hidden sm:inline">{vm.blockCopied ? "Copiado" : "Copiar bloque"}</span>
+          </button>
+        </span>
+      ) : (
+        vm.detail && <span className="hidden truncate sm:inline">{vm.detail}</span>
+      )}
       <span className="ml-auto whitespace-nowrap">{vm.lines} líneas · {vm.size}</span>
-      <label className="flex items-center gap-1.5">
+      <label className="flex items-center gap-1.5" {...tipAttrs(TIPS.indent)}>
         <span className="hidden lg:inline">Sangría</span>
         <select
           value={vm.indent}

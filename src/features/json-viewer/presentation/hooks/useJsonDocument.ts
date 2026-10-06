@@ -6,7 +6,8 @@ import { parseJsonUseCase } from "../../application/useCases/parseJson";
 import { formatIfValidUseCase } from "../../application/useCases/transformJson";
 import { createJsonActions } from "../utils/jsonActions";
 import { SAMPLE_JSON } from "../utils/sampleJson";
-import { buildStatus } from "../utils/status";
+import type { BracketScope } from "../editor/cmBracketScope";
+import { buildStatus, describeScope } from "../utils/status";
 import { useClipboard } from "./useClipboard";
 import { useShareLink } from "./useShareLink";
 import { useTextHistory } from "./useTextHistory";
@@ -23,6 +24,7 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
   const { text, replace } = history;
   const [mode, setMode] = useState<ViewMode>("editor");
   const [indent, setIndent] = useState<IndentOption>("2");
+  const [scope, setScope] = useState<BracketScope | null>(null);
 
   // Validar es O(tamaño): con JSON grandes se hace en un render de baja prioridad para que
   // el teclado responda primero. Las acciones re-validan si el valor diferido quedó atrás.
@@ -33,6 +35,12 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
   const actions = createJsonActions({ parsed, current, indent, replace });
   const share = useShareLink({ text, onLoad: replace, enabled: shareable });
   const clipboard = useClipboard();
+  const blockClipboard = useClipboard();
+
+  /** Copia solo el bloque del cursor, re-formateado (sin la sangría que tenía dentro del documento). */
+  const copyBlock = () => {
+    if (scope) void blockClipboard.copy(formatIfValidUseCase(text.slice(scope.from, scope.to + 1), indent));
+  };
 
   const pasteIntoEmpty = useCallback((pasted: string) => replace(formatIfValidUseCase(pasted, indent)), [replace, indent]);
 
@@ -71,8 +79,16 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
       onUndo: history.undo,
       onRedo: history.redo,
       onFormat: actions.format,
+      onScopeChange: setScope,
     },
-    status: { ...status, indent, onIndentChange: changeIndent },
+    status: {
+      ...status,
+      scopeLabel: mode === "editor" ? describeScope(scope) : null,
+      copyBlock,
+      blockCopied: blockClipboard.copied,
+      indent,
+      onIndentChange: changeIndent,
+    },
   };
 }
 

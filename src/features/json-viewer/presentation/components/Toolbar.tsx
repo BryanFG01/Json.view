@@ -3,6 +3,7 @@ import {
   Quote, Redo2, Share2, Trash2, Undo2, Upload,
 } from "lucide-react";
 import type { JsonDocumentVM } from "../hooks/useJsonDocument";
+import { TIPS } from "../utils/tooltips.constants";
 import { ModeTabs } from "./ModeTabs";
 import { SortMenu } from "./SortMenu";
 import { ToolbarButton } from "./ToolbarButton";
@@ -23,24 +24,24 @@ export function Toolbar({ vm, onUpload, onDownload }: ToolbarProps) {
       <ModeTabs mode={vm.mode} onChange={vm.setMode} />
       <Divider />
       <nav className="contents" aria-label="Acciones">
-        <ToolbarButton icon={FileJson} label="Cargar ejemplo" onClick={vm.loadSample} />
-        <ToolbarButton icon={Upload} label="Subir archivo" onClick={onUpload} />
-        <ToolbarButton icon={Download} label="Descargar" onClick={onDownload} disabled={!vm.hasText} />
-        <ToolbarButton icon={vm.copied ? Check : Copy} label="Copiar" onClick={vm.copy} disabled={!vm.hasText} active={vm.copied} />
+        <ToolbarButton icon={FileJson} tip={TIPS.sample} onClick={vm.loadSample} />
+        <ToolbarButton icon={Upload} tip={TIPS.upload} onClick={onUpload} />
+        <ToolbarButton icon={Download} tip={TIPS.download} onClick={onDownload} disabled={!vm.hasText} />
+        <ToolbarButton icon={vm.copied ? Check : Copy} tip={TIPS.copy} onClick={vm.copy} disabled={!vm.hasText} active={vm.copied} />
         {vm.canShare && (
-          <ToolbarButton icon={vm.shared ? Check : Share2} label="Copiar enlace para compartir" onClick={vm.copyLink} disabled={!vm.hasText} active={vm.shared} />
+          <ToolbarButton icon={vm.shared ? Check : Share2} tip={TIPS.share} onClick={vm.copyLink} disabled={!vm.hasText} active={vm.shared} />
         )}
         <Divider />
-        <ToolbarButton icon={AlignLeft} label="Formatear (Shift+Alt+F)" onClick={vm.format} disabled={!vm.isValid} />
-        <ToolbarButton icon={Layers} label="Analizar JSON anidado y formatear" onClick={vm.expandNested} disabled={!vm.isValid} />
+        <ToolbarButton icon={AlignLeft} tip={TIPS.format} onClick={vm.format} disabled={!vm.isValid} />
+        <ToolbarButton icon={Layers} tip={TIPS.expandNested} onClick={vm.expandNested} disabled={!vm.isValid} />
         <SortMenu disabled={!vm.isValid} onSort={vm.sort} />
-        <ToolbarButton icon={Minimize2} label="Minificar" onClick={vm.minify} disabled={!vm.isValid} />
-        <ToolbarButton icon={Quote} label="Escapar como string" onClick={vm.escape} disabled={!vm.isValid} />
-        <ToolbarButton icon={Braces} label="Desescapar string a JSON" onClick={vm.unescape} disabled={!vm.canUnescape} />
-        <ToolbarButton icon={Trash2} label="Limpiar" onClick={vm.clear} disabled={!vm.hasText} />
+        <ToolbarButton icon={Minimize2} tip={TIPS.minify} onClick={vm.minify} disabled={!vm.isValid} />
+        <ToolbarButton icon={Quote} tip={TIPS.escape} onClick={vm.escape} disabled={!vm.isValid} />
+        <ToolbarButton icon={Braces} tip={TIPS.unescape} onClick={vm.unescape} disabled={!vm.canUnescape} />
+        <ToolbarButton icon={Trash2} tip={TIPS.clear} onClick={vm.clear} disabled={!vm.hasText} />
         <Divider />
-        <ToolbarButton icon={Undo2} label="Deshacer (Ctrl+Z)" onClick={vm.undo} disabled={!vm.canUndo} />
-        <ToolbarButton icon={Redo2} label="Rehacer (Ctrl+Y)" onClick={vm.redo} disabled={!vm.canRedo} />
+        <ToolbarButton icon={Undo2} tip={TIPS.undo} onClick={vm.undo} disabled={!vm.canUndo} />
+        <ToolbarButton icon={Redo2} tip={TIPS.redo} onClick={vm.redo} disabled={!vm.canRedo} />
       </nav>
     </div>
   );

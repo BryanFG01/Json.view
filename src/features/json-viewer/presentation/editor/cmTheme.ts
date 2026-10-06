@@ -30,7 +30,25 @@ export const editorTheme = EditorView.theme({
     padding: "0 6px",
     margin: "0 2px",
   },
-  ".cm-matchingBracket": { backgroundColor: mix("--accent", 25), outline: "none" },
+  // Llave bajo el cursor y su pareja.
+  "&.cm-focused .cm-matchingBracket, .cm-matchingBracket": {
+    backgroundColor: mix("--accent", 30),
+    outline: `1px solid ${mix("--accent", 70)}`,
+    borderRadius: "2px",
+  },
+  ".cm-nonmatchingBracket": { backgroundColor: mix("--err", 25), outline: "none" },
+  // Bloque del cursor en el margen (ver cmBracketScope.ts): la franja cubre números y flechas,
+  // y la barra vertical va en el borde pegado al código.
+  ".cm-gutterElement.cm-scope-edge": { backgroundColor: mix("--accent", 45) },
+  ".cm-lineNumbers .cm-gutterElement.cm-scope-edge": { color: "var(--fg)", fontWeight: "700" },
+  ".cm-gutterElement.cm-scope-mid": { backgroundColor: mix("--accent", 16) },
+  ".cm-foldGutter .cm-gutterElement.cm-scope-edge, .cm-foldGutter .cm-gutterElement.cm-scope-mid": {
+    boxShadow: "inset -3px 0 0 var(--accent)",
+  },
+  ".cm-lineNumbers .cm-gutterElement.cm-scope-edge-soft": { color: "var(--accent)", fontWeight: "600" },
+  ".cm-foldGutter .cm-gutterElement.cm-scope-edge-soft, .cm-foldGutter .cm-gutterElement.cm-scope-mid-soft": {
+    boxShadow: `inset -2px 0 0 ${mix("--accent", 45)}`,
+  },
   ".cm-placeholder": { color: "var(--muted)" },
   ".cm-error-line": { backgroundColor: mix("--err", 14) },
   ".cm-error-line-gutter": { backgroundColor: mix("--err", 25), color: "var(--err)" },

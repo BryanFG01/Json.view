@@ -14,6 +14,8 @@ export interface TreeNodeVM {
   preview: string;
   depth: number;
   defaultOpen: boolean;
+  /** Valor del nodo (en un grupo, el contenedor completo: el rango está en `source`). */
+  value: JsonValue;
   /** Contenedor (o grupo) del que salen los hijos, con el rango de entradas que le toca. */
   source: { value: JsonValue; from: number; to: number } | null;
 }
@@ -47,7 +49,7 @@ interface NodeOptions {
 
 function createNode(value: JsonValue, { label, labelIsIndex, id, depth, openDepth }: NodeOptions): TreeNodeVM {
   const kind = getKind(value);
-  const base = { id, label: label === null ? null : formatLabel(label, labelIsIndex), labelIsIndex, kind, depth };
+  const base = { id, label: label === null ? null : formatLabel(label, labelIsIndex), labelIsIndex, kind, depth, value };
   if (kind !== "object" && kind !== "array") {
     const preview = kind === "string" ? JSON.stringify(value) : String(value);
     return { ...base, preview, defaultOpen: false, source: null };
@@ -75,6 +77,7 @@ function createGroups(node: TreeNodeVM, openDepth: number): TreeNodeVM[] {
       preview: `${end - start} elementos`,
       depth: node.depth,
       defaultOpen: start === from && node.depth < openDepth,
+      value,
       source: { value, from: start, to: end },
     });
   }

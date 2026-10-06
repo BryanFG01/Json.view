@@ -6,6 +6,6 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1400, height: 700 } });
 await page.goto(url);
 await page.getByRole("button", { name: "Cargar ejemplo" }).click();
-await page.getByTitle("Plegar bloque", { exact: true }).nth(1).click();
+await page.getByLabel("Plegar bloque", { exact: true }).nth(1).click();
 await page.screenshot({ path: out });
 await browser.close();

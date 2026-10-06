@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import type { KeyOrder } from "../../domain/models/json";
 import { useJsonDiff, type JsonDiffProps } from "../hooks/useJsonDiff";
 import { KEY_ORDER_OPTIONS } from "../utils/sortOptions.constants";
+import { TIPS } from "../utils/tooltips.constants";
+import { tipAttrs } from "@/shared/tooltip/tip";
 import { DiffCell } from "./DiffCell";
 
 function Message({ children }: { children: ReactNode }) {
@@ -33,7 +35,8 @@ export function DiffView(props: JsonDiffProps) {
           </span>
         )}
         <select
-          aria-label="Orden de las claves"
+          aria-label={TIPS.diffKeyOrder.title}
+          {...tipAttrs(TIPS.diffKeyOrder)}
           value={vm.sort.keys}
           onChange={(e) => vm.setKeyOrder(e.target.value as KeyOrder)}
           className="rounded border border-border bg-bg px-1.5 py-0.5 text-xs text-fg outline-none focus-visible:border-accent"
@@ -42,14 +45,14 @@ export function DiffView(props: JsonDiffProps) {
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
-        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted">
+        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted" {...tipAttrs(TIPS.diffArrays)}>
           <input type="checkbox" checked={vm.sort.arrays} onChange={vm.toggleSortArrays} className="accent-accent" />
           Ordenar arrays (1, 2, 10…)
         </label>
         {vm.comparesRawText && vm.hasBoth && (
           <span className="hidden text-xs text-err sm:inline">Uno de los JSON no es válido: se compara el texto tal cual</span>
         )}
-        <button type="button" onClick={vm.onClose} className="ml-auto flex items-center gap-1.5 rounded px-2 py-1 text-xs text-muted hover:bg-hover hover:text-fg">
+        <button type="button" onClick={vm.onClose} {...tipAttrs(TIPS.exitDiff)} className="ml-auto flex items-center gap-1.5 rounded px-2 py-1 text-xs text-muted hover:bg-hover hover:text-fg">
           <X className="size-3.5" /> Salir <kbd className="rounded border border-border px-1 font-mono text-[10px]">Esc</kbd>
         </button>
       </div>
