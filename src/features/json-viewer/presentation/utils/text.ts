@@ -6,8 +6,19 @@ export function countLines(text: string): number {
   return lines;
 }
 
+/** Tamaño en bytes UTF-8 sin crear una copia codificada del texto (importa con JSON de varios MB). */
 export function byteLength(text: string): number {
-  return new TextEncoder().encode(text).length;
+  let bytes = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code < 0x80) bytes += 1;
+    else if (code < 0x800) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff) {
+      bytes += 4;
+      i++;
+    } else bytes += 3;
+  }
+  return bytes;
 }
 
 export function formatBytes(bytes: number): string {

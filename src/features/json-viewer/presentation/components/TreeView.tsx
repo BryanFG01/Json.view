@@ -30,7 +30,7 @@ export function TreeView({ parsed }: { parsed: JsonParseResult }) {
         <ToolbarButton icon={ChevronsDownUp} label="Colapsar todo" onClick={vm.collapseAll} />
       </div>
       <div key={vm.treeKey} className="min-h-0 flex-1 overflow-auto p-3 font-mono text-[14px] leading-[22px]">
-        <TreeNode node={vm.root} />
+        <TreeNode node={vm.root} openDepth={vm.openDepth} />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { ChevronsUpDown, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { KeyOrder } from "../../domain/models/json";
 import { useJsonDiff, type JsonDiffProps } from "../hooks/useJsonDiff";
@@ -9,6 +9,14 @@ import { DiffCell } from "./DiffCell";
 
 function Message({ children }: { children: ReactNode }) {
   return <p className="p-8 text-center text-sm text-muted">{children}</p>;
+}
+
+function DiffGap({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="my-0.5 flex w-full items-center justify-center gap-2 bg-hover/60 py-1 font-sans text-xs text-accent hover:bg-hover">
+      <ChevronsUpDown className="size-3.5" /> {label}
+    </button>
+  );
 }
 
 export function DiffView(props: JsonDiffProps) {
@@ -49,14 +57,19 @@ export function DiffView(props: JsonDiffProps) {
       {!vm.hasBoth && <Message>Escribe o pega un JSON en cada panel para compararlos. Pulsa Esc para volver.</Message>}
       {vm.isIdentical && <Message>Los dos JSON son idénticos.</Message>}
 
-      {vm.table && !vm.isIdentical && (
+      {vm.view && !vm.isIdentical && (
         <div className="min-h-0 flex-1 overflow-auto py-2 font-mono text-[13px] leading-[21px]">
-          {vm.table.rows.map((row) => (
-            <div key={row.id} className="grid grid-cols-2 divide-x divide-border">
-              <DiffCell cell={row.left} />
-              <DiffCell cell={row.right} />
-            </div>
-          ))}
+          {vm.view.items.map((item) =>
+            item.type === "row" ? (
+              <div key={item.id} className="grid grid-cols-2 divide-x divide-border">
+                <DiffCell cell={item.left} />
+                <DiffCell cell={item.right} />
+              </div>
+            ) : (
+              <DiffGap key={item.id} label={item.label} onClick={() => vm.revealGap(item.id)} />
+            ),
+          )}
+          {vm.view.moreLabel && <DiffGap label={vm.view.moreLabel} onClick={vm.showMore} />}
         </div>
       )}
     </section>

@@ -27,9 +27,9 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | | `useJsonDiff`, `useEscapeKey` | View model de la comparación (con opciones de orden); salir con Esc |
 | | `useSortMenu` | Menú "Ordenar" de cada panel (posición `fixed` para no quedar recortado por la barra) |
 | | `useTextHistory` | Deshacer/rehacer (fuente de verdad del texto; agrupa pulsaciones seguidas) |
-| | `useTreeView` | View model del árbol, expandir/colapsar todo |
+| | `useTreeView`, `useTreeNode` | Árbol perezoso: cada nodo calcula y pinta sus hijos solo mientras está abierto |
 | | `useFileTransfer`, `useClipboard`, `useShareLink` | Subir/arrastrar/descargar, copiar, enlace compartible |
-| presentation/utils | `diffRows.ts`, `highlight.ts` (colores en Comparar), `jsonTree.ts`, `status.ts`, `text.ts`, `jsonActions.ts`, `shareLink.ts`, `fileIO.ts`, `sortOptions.constants.ts`, `*.constants.ts` | Funciones puras y constantes |
+| presentation/utils | `diffRows.ts` (filas sin colorear), `diffView.ts` (cambios + contexto, bloques iguales colapsados, máx. 2.000 filas), `highlight.ts` (colores en Comparar), `jsonTree.ts` (nodos perezosos, grupos de 100), `status.ts`, `text.ts`, `jsonActions.ts`, `shareLink.ts`, `fileIO.ts`, `sortOptions.constants.ts`, `*.constants.ts` | Funciones puras y constantes |
 | presentation/components | `AppBar`, `JsonPane`, `Toolbar`, `SortMenu`, `ModeTabs`, `ToolbarButton`, `JsonEditor`, `ErrorBanner`, `TreeView`, `TreeNode`, `StatusBar`, `DiffView`, `DiffCell` | Solo vista |
 
 Compartido: `src/shared/theme/` (tema claro/oscuro con `useSyncExternalStore` + script anti-parpadeo cargado con `next/script` `beforeInteractive`).
@@ -56,6 +56,24 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 - Deshacer/rehacer (Ctrl+Z / Ctrl+Y), Tab indenta, Shift+Alt+F formatea.
 - Privacidad: todo corre en el navegador; no hay backend ni Server Actions.
 - Tema claro/oscuro recordado en `localStorage`; favicon con el logo.
+
+## Rendimiento con JSON grandes
+Medido con `npm run test:perf` (build de producción, Chromium). Límite de la prueba: 15 s por operación.
+
+| Líneas | Tamaño | Abrir | Teclear 5 car. | Ordenar | Minificar | Árbol | Comparar | Memoria |
+|---|---|---|---|---|---|---|---|---|
+| 10.000 | 0,2 MB | 0,3 s | 0,1 s | 0,2 s | 0,1 s | 0,2 s | 1,2 s | 40 MB |
+| 100.000 | 1,8 MB | 0,8 s | 0,2 s | 0,4 s | 0,2 s | 0,3 s | 1,9 s | 82 MB |
+| 500.000 | 9,1 MB | 2,3 s | 0,7 s | 1,1 s | 0,3 s | 0,2 s | 2,3 s | 347 MB |
+| 1.000.000 | 18,2 MB | 4,5 s | 1,0 s | 1,9 s | 0,4 s | 0,2 s | 3,3 s | 561 MB |
+
+Antes de optimizar: 100.000 líneas tardaban 8,9 s en el Árbol y 58 s en Comparar (1,3 GB), y 500.000 o más colgaban la pestaña.
+
+Qué lo hace posible:
+- **Árbol perezoso**: solo existen los nodos abiertos; listas grandes en grupos `[0 … 99]` (y de 10.000 en 10.000 si pasan de 10.000).
+- **Comparar por bloques**: cambios con 3 líneas de contexto; lo igual se colapsa ("Mostrar 500 de N líneas sin cambios"); máximo 2.000 filas dibujadas ("Mostrar más"); solo se colorean las filas visibles.
+- **Edición**: validación con `useDeferredValue` (el teclado responde primero; las acciones re-validan el texto actual), historial de deshacer con tope de ~50 M caracteres, tamaño en bytes sin copiar el texto, sin recorrer el documento para sincronizar CodeMirror.
+- **Límite conocido**: con ~1 M de líneas cada tecla cuesta ~0,2 s (se copia el documento a React). Para ir más allá: Web Worker (tarea 7).
 
 ## Hoja de ruta (una mejora por vez, con revisión entre cada una)
 Decisiones tomadas: CodeMirror 6 antes de la tarea 1 · árbol híbrido (`<details>` hasta ~5.000 nodos, virtualizado por encima) · e2e con Chromium descargado.
@@ -84,13 +102,15 @@ Decisiones tomadas: CodeMirror 6 antes de la tarea 1 · árbol híbrido (`<detai
 | Tipo | Comando | Qué cubre |
 |---|---|---|
 | Unitarios + propiedades | `npm test` | `parseJson` (ubicación de errores), `locateJsonError` (≡ `JSON.parse` en strings aleatorios), `expandNestedJson`, `diffLines` (Myers = LCS de referencia, 1000 casos), `sortJson` (orden natural, claves numéricas, idempotencia, ≡ formatear sin orden) |
+| Unitarios (utils) | `npm test` | `jsonTree` (perezoso, grupos, 1 M de elementos), `diffView` (contexto, revelar por partes, límite de filas) |
+| Rendimiento | `npm run test:perf` | 10 k, 100 k, 500 k y 1 M líneas: abrir, teclear, ordenar, minificar, deshacer, árbol, comparar (< 15 s cada una) |
 | E2E | `npm run test:e2e` | Validar, formatear + plegar, deshacer/rehacer, pegar, dividir, comparar, ordenar panel, ordenar al comparar, subir archivo, compartir enlace |
 
 E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura manual: `npx tsx e2e/screenshot.manual.mts <url> <salida.png>`.
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 30/30 ✔ · `npm run test:e2e`: 10/10 ✔
+- `npm test`: 36/36 ✔ · `npm run test:e2e`: 10/10 ✔ · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

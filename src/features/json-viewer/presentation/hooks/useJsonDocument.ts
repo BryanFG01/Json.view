@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import type { IndentOption, ViewMode } from "../../domain/models/json";
 import { parseJsonUseCase } from "../../application/useCases/parseJson";
 import { formatIfValidUseCase } from "../../application/useCases/transformJson";
@@ -24,9 +24,13 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
   const [mode, setMode] = useState<ViewMode>("editor");
   const [indent, setIndent] = useState<IndentOption>("2");
 
-  const parsed = useMemo(() => parseJsonUseCase(text), [text]);
-  const status = useMemo(() => buildStatus(text, parsed), [text, parsed]);
-  const actions = createJsonActions({ parsed, indent, replace });
+  // Validar es O(tamaño): con JSON grandes se hace en un render de baja prioridad para que
+  // el teclado responda primero. Las acciones re-validan si el valor diferido quedó atrás.
+  const deferredText = useDeferredValue(text);
+  const parsed = useMemo(() => parseJsonUseCase(deferredText), [deferredText]);
+  const status = useMemo(() => buildStatus(deferredText, parsed), [deferredText, parsed]);
+  const current = useCallback(() => (deferredText === text ? parsed : parseJsonUseCase(text)), [deferredText, text, parsed]);
+  const actions = createJsonActions({ parsed, current, indent, replace });
   const share = useShareLink({ text, onLoad: replace, enabled: shareable });
   const clipboard = useClipboard();
 

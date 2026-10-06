@@ -1,36 +1,33 @@
 import type { DiffOp } from "../../domain/models/diff";
-import { tokenizeJson, type Token } from "./highlight";
 
 export type DiffCellKind = "equal" | "removed" | "added" | "empty";
 
-export interface DiffCellVM {
+/** Celda sin colorear: el coloreado se hace solo para las filas que se muestran (ver diffView.ts). */
+export interface DiffCellData {
   number: number | null;
-  tokens: Token[];
+  text: string;
   kind: DiffCellKind;
 }
 
-export interface DiffRowVM {
-  id: number;
-  left: DiffCellVM;
-  right: DiffCellVM;
+export interface DiffRowData {
+  left: DiffCellData;
+  right: DiffCellData;
 }
 
 export interface DiffTable {
-  rows: DiffRowVM[];
+  rows: DiffRowData[];
   added: number;
   removed: number;
 }
 
-const EMPTY_CELL: DiffCellVM = { number: null, tokens: [], kind: "empty" };
-
-const cell = (number: number, text: string, kind: DiffCellKind): DiffCellVM => ({ number, tokens: tokenizeJson(text), kind });
+const EMPTY_CELL: DiffCellData = { number: null, text: "", kind: "empty" };
 
 /**
  * Convierte las operaciones en filas lado a lado. Un bloque de borrados seguido de agregados
  * se empareja fila a fila; el lado más corto se rellena con celdas vacías.
  */
 export function buildDiffRows(ops: DiffOp[]): DiffTable {
-  const rows: DiffRowVM[] = [];
+  const rows: DiffRowData[] = [];
   let leftLine = 0;
   let rightLine = 0;
   let removed: string[] = [];
@@ -40,9 +37,9 @@ export function buildDiffRows(ops: DiffOp[]): DiffTable {
 
   const flush = () => {
     for (let i = 0; i < Math.max(removed.length, added.length); i++) {
-      const left = i < removed.length ? cell(++leftLine, removed[i], "removed") : EMPTY_CELL;
-      const right = i < added.length ? cell(++rightLine, added[i], "added") : EMPTY_CELL;
-      rows.push({ id: rows.length, left, right });
+      const left: DiffCellData = i < removed.length ? { number: ++leftLine, text: removed[i], kind: "removed" } : EMPTY_CELL;
+      const right: DiffCellData = i < added.length ? { number: ++rightLine, text: added[i], kind: "added" } : EMPTY_CELL;
+      rows.push({ left, right });
     }
     totalRemoved += removed.length;
     totalAdded += added.length;
@@ -55,9 +52,14 @@ export function buildDiffRows(ops: DiffOp[]): DiffTable {
     else if (op.type === "insert") added.push(op.text);
     else {
       flush();
-      rows.push({ id: rows.length, left: cell(++leftLine, op.text, "equal"), right: cell(++rightLine, op.text, "equal") });
+      rows.push({
+        left: { number: ++leftLine, text: op.text, kind: "equal" },
+        right: { number: ++rightLine, text: op.text, kind: "equal" },
+      });
     }
   }
   flush();
   return { rows, added: totalAdded, removed: totalRemoved };
 }
+
+export const isChangedRow = (row: DiffRowData) => row.left.kind !== "equal" || row.right.kind !== "equal";

@@ -9,18 +9,22 @@ import {
 } from "../../application/useCases/transformJson";
 
 interface JsonActionsParams {
+  /** Resultado mostrado (puede ir un render por detrás del texto si es grande). */
   parsed: JsonParseResult;
+  /** Resultado del texto actual: las acciones nunca operan sobre una versión vieja. */
+  current: () => JsonParseResult;
   indent: IndentOption;
   replace: (text: string) => void;
 }
 
 /** Acciones de transformación sobre el JSON actual. Solo actúan si el JSON es válido. */
-export function createJsonActions({ parsed, indent, replace }: JsonActionsParams) {
+export function createJsonActions({ parsed, current, indent, replace }: JsonActionsParams) {
   const value = parsed.status === "valid" ? parsed.value : undefined;
 
   const apply = (transform: (value: JsonValue) => string | null) => {
-    if (value === undefined) return;
-    const output = transform(value);
+    const latest = current();
+    if (latest.status !== "valid") return;
+    const output = transform(latest.value);
     if (output !== null) replace(output);
   };
 

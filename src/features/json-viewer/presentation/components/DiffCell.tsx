@@ -1,4 +1,4 @@
-import type { DiffCellVM } from "../utils/diffRows";
+import type { DiffCellVM } from "../utils/diffView";
 import { DIFF_CELL_CLASS, DIFF_SIGN, TOKEN_CLASS } from "../utils/styles.constants";
 
 export function DiffCell({ cell }: { cell: DiffCellVM }) {

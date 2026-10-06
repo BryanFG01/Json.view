@@ -3,6 +3,8 @@
 import { useCallback, useRef, useState } from "react";
 
 const MAX_HISTORY = 200;
+/** Tope de memoria: suma de caracteres de todas las versiones guardadas (~100 MB en UTF-16). */
+const MAX_HISTORY_CHARS = 50_000_000;
 /** Las pulsaciones seguidas dentro de esta ventana cuentan como un solo paso de deshacer. */
 const TYPING_WINDOW_MS = 600;
 
@@ -12,6 +14,14 @@ interface HistoryState {
   future: string[];
 }
 
+/** Descarta las versiones más antiguas hasta que el total quepa en MAX_HISTORY_CHARS (siempre deja 1). */
+function trimToBudget(past: string[], presentLength: number): string[] {
+  let total = presentLength;
+  let keepFrom = past.length;
+  while (keepFrom > 0 && total + past[keepFrom - 1].length <= MAX_HISTORY_CHARS) total += past[--keepFrom].length;
+  return past.slice(Math.min(keepFrom, past.length - 1));
+}
+
 export function useTextHistory(initial = "") {
   const [state, setState] = useState<HistoryState>({ past: [], present: initial, future: [] });
   const lastTypedAt = useRef(0);
@@ -19,7 +29,7 @@ export function useTextHistory(initial = "") {
   const commit = useCallback((next: string, coalesce: boolean) => {
     setState((s) => {
       if (next === s.present) return s;
-      const past = coalesce ? s.past : [...s.past, s.present].slice(-MAX_HISTORY);
+      const past = coalesce ? s.past : trimToBudget([...s.past, s.present].slice(-MAX_HISTORY), next.length);
       return { past, present: next, future: [] };
     });
   }, []);

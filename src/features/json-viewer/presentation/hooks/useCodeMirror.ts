@@ -21,6 +21,8 @@ export function useCodeMirror({ text, errorOffset, autoFocus, placeholder, ...ca
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const callbacksRef = useRef(callbacks);
+  /** Último texto que sabemos idéntico al del editor: evita recorrer el documento en cada render. */
+  const syncedRef = useRef(text);
 
   useEffect(() => {
     callbacksRef.current = callbacks;
@@ -29,9 +31,16 @@ export function useCodeMirror({ text, errorOffset, autoFocus, placeholder, ...ca
   useEffect(() => {
     const parent = containerRef.current;
     if (!parent) return;
+    const getCallbacks = (): EditorCallbacks => ({
+      ...callbacksRef.current,
+      onChange: (next) => {
+        syncedRef.current = next;
+        callbacksRef.current.onChange(next);
+      },
+    });
     const view = new EditorView({
       parent,
-      state: EditorState.create({ doc: text, extensions: buildExtensions(() => callbacksRef.current, placeholder) }),
+      state: EditorState.create({ doc: syncedRef.current, extensions: buildExtensions(getCallbacks, placeholder) }),
     });
     viewRef.current = view;
     if (autoFocus) view.focus();
@@ -45,7 +54,8 @@ export function useCodeMirror({ text, errorOffset, autoFocus, placeholder, ...ca
 
   useEffect(() => {
     const view = viewRef.current;
-    if (!view || view.state.doc.toString() === text) return;
+    if (!view || text === syncedRef.current) return;
+    syncedRef.current = text;
     const anchor = Math.min(view.state.selection.main.head, text.length);
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: text },
