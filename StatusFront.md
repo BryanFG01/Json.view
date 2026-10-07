@@ -21,10 +21,12 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | presentation/editor | `cmExtensions.ts` | Extensiones de CodeMirror: numeración, plegado, atajos, pegar, `externalChange` |
 | | `cmTheme.ts` | Tema y colores de sintaxis con las variables CSS (claro/oscuro sin reconfigurar) |
 | | `cmErrorLine.ts` | Marca la línea del error de sintaxis (fondo + margen) |
+| | `cmSearchPanel.ts`, `cmSearchCount.ts`, `cmSearchTheme.ts` | Buscador propio de cada editor (español, contador "3 de 12", Aa / palabra / regex, reemplazar) |
 | | `cmBracketScope.ts` | Bloque { } / [ ] del cursor pintado en el margen (fuerte sobre una llave, suave dentro de un bloque) |
 | presentation/hooks | `useJsonViewer` | Hook de página: documento izquierdo/derecho, dividir pantalla, comparar, tema |
 | | `useJsonDocument` | Estado de un panel (historial, parseo, vista, sangría, acciones) |
 | | `useJsonEditor` → `useCodeMirror` | Monta CodeMirror como vista controlada por React; ir al error |
+| | `useFindShortcut` | Ctrl+F abre el buscador del panel activo (foco o último clic), no el del navegador |
 | | `useJsonDiff`, `useEscapeKey` | View model de la comparación (con opciones de orden); salir con Esc |
 | | `useSortMenu` | Menú "Ordenar" de cada panel (posición `fixed` para no quedar recortado por la barra) |
 | | `useTextHistory` | Deshacer/rehacer (fuente de verdad del texto; agrupa pulsaciones seguidas) |
@@ -45,6 +47,7 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 ## Funcionalidades
 - Validación en vivo con línea/columna del error, línea marcada en rojo y botón "Ir al error".
 - **Plegado de bloques** (⌄ / › en el margen; atajos Ctrl+Shift+[ y Ctrl+Shift+]).
+- **Buscar y reemplazar dentro del editor** (Ctrl+F / Ctrl+H o botón lupa): la barra se abre dentro del panel; con la pantalla dividida, cada panel tiene su propio buscador independiente. Contador ("3 de 12", "Sin resultados", "Regex no válida"), Enter / Shift+Enter (o F3) para siguiente/anterior, mayúsculas, palabra completa, regex, reemplazar uno o todos (se puede deshacer). Coincidencias resaltadas; al seleccionar texto se marcan sus otras apariciones. En la vista Árbol, Ctrl+F vuelve al Editor; en Comparar, Ctrl+F queda para el navegador.
 - **Autocierre** de `{ }`, `[ ]` y `" "`: al escribir la apertura se añade el cierre; escribir el cierre lo salta; Backspace en un par vacío borra los dos; con texto seleccionado lo envuelve; Enter entre llaves abre el bloque con sangría.
 - **Llaves emparejadas**: al pararse (clic o flechas) junto a `{ } [ ]` se resaltan la apertura y el cierre, y la columna de números se pinta del bloque completo (apertura/cierre intensos, intermedias suaves). Dentro de un bloque, marca suave del bloque que lo contiene. La barra de estado muestra "Bloque: líneas X–Y"; Ctrl+Shift+\ salta a la llave pareja. En bloques de más de 3.000 líneas solo se marcan apertura y cierre.
 - **Tooltips**: al pasar el ratón (o con foco de teclado) cada icono explica qué hace, con su atajo, y si está desactivado dice por qué. Aparecen en ~150 ms (al instante si ya hay uno abierto), se recolocan para no salirse de la pantalla y no se muestran en pantallas táctiles. Sustituyen al `title` nativo (lento y genérico).
@@ -110,7 +113,7 @@ Decisiones tomadas: CodeMirror 6 antes de la tarea 1 · árbol híbrido (`<detai
 ## Notas
 - Sin backend: no aplican `infrastructure/`, `domain/ports/` ni `runAction`. Si se agrega persistencia (p. ej. historial en servidor), seguir el patrón puerto → repositorio → action.
 - `highlight.ts` ya solo colorea la vista Comparar; se desactiva por encima de 200 000 caracteres (`HIGHLIGHT_MAX_CHARS`). El editor usa el parser de CodeMirror.
-- Dependencias de CodeMirror (~75 KB gzip): `@codemirror/{state,view,language,lang-json,commands}`, `@lezer/highlight` y `@codemirror/autocomplete` (solo para `closeBrackets`, el autocierre).
+- Dependencias de CodeMirror (~75 KB gzip): `@codemirror/{state,view,language,lang-json,commands}`, `@lezer/highlight`, `@codemirror/autocomplete` (solo `closeBrackets`, el autocierre) y `@codemirror/search` (motor de búsqueda; la barra es propia).
 
 ## Tests
 | Tipo | Comando | Qué cubre |
@@ -124,7 +127,7 @@ E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 49/49 ✔ · `npm run test:e2e`: 14/14 ✔ (en `e2e/editor`, `navigation`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
+- `npm test`: 53/53 ✔ · `npm run test:e2e`: 18/18 ✔ (en `e2e/editor`, `navigation`, `search`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

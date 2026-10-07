@@ -31,5 +31,6 @@ export function describeCount(query: SearchQuery, count: MatchCount): string {
   if (!query.valid) return "Regex no válida";
   if (count.total === 0) return "Sin resultados";
   const total = `${count.total.toLocaleString("es")}${count.capped ? "+" : ""}`;
-  return count.current > 0 ? `${count.current} de ${total}` : `${total} resultados`;
+  if (count.current > 0) return `${count.current} de ${total}`;
+  return count.total === 1 && !count.capped ? "1 resultado" : `${total} resultados`;
 }

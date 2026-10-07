@@ -117,6 +117,9 @@ export function createSearchPanel(view: EditorView): Panel {
     mount() {
       panels.set(view, { showReplace });
       refreshCount();
+      // Con un panel propio, enfocar el campo al abrir le toca al panel (CodeMirror solo lo hace al reabrir).
+      searchInput.focus();
+      searchInput.select();
     },
     destroy() {
       panels.delete(view);

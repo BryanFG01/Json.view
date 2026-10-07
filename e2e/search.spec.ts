@@ -48,9 +48,14 @@ test("con la pantalla dividida, cada panel tiene su propio buscador", async ({ p
   await expect(searchInput(right)).toBeFocused();
   await page.keyboard.type("activo");
 
+  // Ctrl+H desde el campo de búsqueda abre la fila de reemplazo (no el historial del navegador).
+  await page.keyboard.press("ControlOrMeta+H");
+  await expect(searchBar(right).getByRole("textbox", { name: "Reemplazar por…" })).toBeFocused();
+  await expect(searchBar(left).getByRole("textbox", { name: "Reemplazar por…" })).toBeHidden();
+
   await expect(searchInput(left)).toHaveValue("proyecto");
   await expect(searchInput(right)).toHaveValue("activo");
-  await expect(searchBar(left)).toContainText("1 resultados");
+  await expect(searchBar(left)).toContainText("1 resultado");
   await expect(searchBar(right)).toContainText("3 resultados");
 });
 

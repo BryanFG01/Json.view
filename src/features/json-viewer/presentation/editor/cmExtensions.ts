@@ -61,7 +61,8 @@ function shortcuts(get: () => EditorCallbacks): Extension {
       },
     },
     // Buscar (Ctrl+F) / reemplazar (Ctrl+H) dentro de este editor, no en toda la página.
-    { key: "Mod-h", run: openReplacePanel, preventDefault: true },
+    // `scope` incluye la barra de búsqueda: Ctrl+H dentro del campo no debe abrir el historial del navegador.
+    { key: "Mod-h", run: openReplacePanel, scope: "editor search-panel", preventDefault: true },
     ...searchKeymap,
     // Backspace en `{|}` / `"|"` borra el par completo.
     ...closeBracketsKeymap,

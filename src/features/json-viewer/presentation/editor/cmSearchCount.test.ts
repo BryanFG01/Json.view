@@ -24,6 +24,8 @@ describe("countMatches / describeCount", () => {
   it("textos del contador: sin cursor en una coincidencia, sin resultados y regex inválida", () => {
     const query = new SearchQuery({ search: "ada" });
     expect(describeCount(query, countMatches(query, stateAt(0)))).toBe("3 resultados");
+    const one = new SearchQuery({ search: "email" });
+    expect(describeCount(one, countMatches(one, stateAt(0)))).toBe("1 resultado");
     const none = new SearchQuery({ search: "zzz" });
     expect(describeCount(none, countMatches(none, stateAt(0)))).toBe("Sin resultados");
     const bad = new SearchQuery({ search: "(", regexp: true });
