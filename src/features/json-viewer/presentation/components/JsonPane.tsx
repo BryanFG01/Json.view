@@ -3,6 +3,7 @@
 import { FileUp } from "lucide-react";
 import type { JsonDocumentVM } from "../hooks/useJsonDocument";
 import { useFileTransfer } from "../hooks/useFileTransfer";
+import type { PaneId } from "../hooks/useFindShortcut";
 import { ACCEPTED_FILES } from "../utils/fileIO";
 import { JsonEditor } from "./JsonEditor";
 import { StatusBar } from "./StatusBar";
@@ -11,16 +12,18 @@ import { TreeView } from "./TreeView";
 
 interface JsonPaneProps {
   doc: JsonDocumentVM;
+  /** Identifica el panel para dirigir Ctrl+F a su propio buscador. */
+  id: PaneId;
   label: string;
   className?: string;
 }
 
 /** Un panel completo: barra de acciones, editor o árbol, barra de estado y subida de archivos. */
-export function JsonPane({ doc, label, className = "" }: JsonPaneProps) {
+export function JsonPane({ doc, id, label, className = "" }: JsonPaneProps) {
   const { inputRef, ...files } = useFileTransfer({ text: doc.text, onLoad: doc.replace });
 
   return (
-    <section aria-label={label} className={`flex min-h-0 min-w-0 flex-1 flex-col ${className}`}>
+    <section aria-label={label} data-pane={id} className={`flex min-h-0 min-w-0 flex-1 flex-col ${className}`}>
       <Toolbar vm={doc.toolbar} onUpload={files.openPicker} onDownload={files.download} />
       <div
         className="relative min-h-0 flex-1"

@@ -25,6 +25,13 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
   const [mode, setMode] = useState<ViewMode>("editor");
   const [indent, setIndent] = useState<IndentOption>("2");
   const [scope, setScope] = useState<BracketScope | null>(null);
+  const [searchPending, setSearchPending] = useState(false);
+  const onSearchOpened = useCallback(() => setSearchPending(false), []);
+  /** Abre el buscador de ESTE panel (si está en Árbol, pasa al Editor). */
+  const openSearch = useCallback(() => {
+    setMode("editor");
+    setSearchPending(true);
+  }, []);
 
   // Validar es O(tamaño): con JSON grandes se hace en un render de baja prioridad para que
   // el teclado responda primero. Las acciones re-validan si el valor diferido quedó atrás.
@@ -54,7 +61,9 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
     parsed,
     mode,
     replace,
+    openSearch,
     toolbar: {
+      openSearch,
       ...actions,
       ...share,
       canShare: shareable,
@@ -80,6 +89,8 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
       onRedo: history.redo,
       onFormat: actions.format,
       onScopeChange: setScope,
+      searchPending,
+      onSearchOpened,
     },
     status: {
       ...status,

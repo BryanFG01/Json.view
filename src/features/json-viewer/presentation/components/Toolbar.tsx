@@ -1,6 +1,6 @@
 import {
   AlignLeft, Braces, Check, Copy, Download, FileJson, Layers, Minimize2,
-  Quote, Redo2, Share2, Trash2, Undo2, Upload,
+  Quote, Redo2, Search, Share2, Trash2, Undo2, Upload,
 } from "lucide-react";
 import type { JsonDocumentVM } from "../hooks/useJsonDocument";
 import { TIPS } from "../utils/tooltips.constants";
@@ -31,6 +31,7 @@ export function Toolbar({ vm, onUpload, onDownload }: ToolbarProps) {
         {vm.canShare && (
           <ToolbarButton icon={vm.shared ? Check : Share2} tip={TIPS.share} onClick={vm.copyLink} disabled={!vm.hasText} active={vm.shared} />
         )}
+        <ToolbarButton icon={Search} tip={TIPS.search} onClick={vm.openSearch} />
         <Divider />
         <ToolbarButton icon={AlignLeft} tip={TIPS.format} onClick={vm.format} disabled={!vm.isValid} />
         <ToolbarButton icon={Layers} tip={TIPS.expandNested} onClick={vm.expandNested} disabled={!vm.isValid} />

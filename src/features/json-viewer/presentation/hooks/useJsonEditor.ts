@@ -15,6 +15,8 @@ export interface JsonEditorProps {
   onRedo: () => void;
   onFormat: () => void;
   onScopeChange: (scope: BracketScope | null) => void;
+  searchPending: boolean;
+  onSearchOpened: () => void;
 }
 
 const PLACEHOLDER = "Pega, escribe o arrastra aquí tu JSON…";

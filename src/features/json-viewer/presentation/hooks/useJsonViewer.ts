@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useTheme } from "@/shared/theme/useTheme";
 import { useEscapeKey } from "./useEscapeKey";
+import { useFindShortcut } from "./useFindShortcut";
 import { useJsonDocument } from "./useJsonDocument";
 
 /** Hook controlador de la página: dos documentos, pantalla dividida, comparación y tema. */
@@ -15,6 +16,7 @@ export function useJsonViewer() {
 
   const closeDiff = useCallback(() => setDiff(false), []);
   useEscapeKey(isDiff, closeDiff);
+  useFindShortcut({ left: left.openSearch, right: isSplit ? right.openSearch : null, enabled: !isDiff });
 
   return {
     left,

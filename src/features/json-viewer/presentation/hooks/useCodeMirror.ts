@@ -1,5 +1,6 @@
 "use client";
 
+import { openSearchPanel } from "@codemirror/search";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useRef } from "react";
@@ -11,13 +12,17 @@ interface CodeMirrorParams extends EditorCallbacks {
   errorOffset: number | null;
   autoFocus: boolean;
   placeholder: string;
+  /** Petición de abrir el buscador de este editor (Ctrl+F fuera del editor o botón Buscar). */
+  searchPending: boolean;
+  onSearchOpened: () => void;
 }
 
 /**
  * Monta CodeMirror como vista "controlada": React (useTextHistory) es la fuente de verdad.
  * Lo que escribe el usuario sube por onChange; los cambios externos bajan con `externalChange`.
  */
-export function useCodeMirror({ text, errorOffset, autoFocus, placeholder, ...callbacks }: CodeMirrorParams) {
+export function useCodeMirror(params: CodeMirrorParams) {
+  const { text, errorOffset, autoFocus, placeholder, searchPending, onSearchOpened, ...callbacks } = params;
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const callbacksRef = useRef(callbacks);
@@ -67,6 +72,13 @@ export function useCodeMirror({ text, errorOffset, autoFocus, placeholder, ...ca
   useEffect(() => {
     viewRef.current?.dispatch({ effects: setErrorOffset.of(errorOffset) });
   }, [errorOffset]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!searchPending || !view) return;
+    openSearchPanel(view);
+    onSearchOpened();
+  }, [searchPending, onSearchOpened]);
 
   const revealOffset = useCallback((offset: number) => {
     const view = viewRef.current;

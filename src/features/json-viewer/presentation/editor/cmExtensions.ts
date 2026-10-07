@@ -6,7 +6,10 @@ import { Annotation, type Extension } from "@codemirror/state";
 import {
   drawSelection, EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers, placeholder,
 } from "@codemirror/view";
+import { highlightSelectionMatches, search, searchKeymap } from "@codemirror/search";
 import { bracketScopeField, type BracketScope } from "./cmBracketScope";
+import { createSearchPanel, openReplacePanel } from "./cmSearchPanel";
+import { searchTheme } from "./cmSearchTheme";
 import { errorLine } from "./cmErrorLine";
 import { editorTheme, jsonHighlighting } from "./cmTheme";
 
@@ -57,6 +60,9 @@ function shortcuts(get: () => EditorCallbacks): Extension {
         return true;
       },
     },
+    // Buscar (Ctrl+F) / reemplazar (Ctrl+H) dentro de este editor, no en toda la página.
+    { key: "Mod-h", run: openReplacePanel, preventDefault: true },
+    ...searchKeymap,
     // Backspace en `{|}` / `"|"` borra el par completo.
     ...closeBracketsKeymap,
     ...foldKeymap,
@@ -95,10 +101,14 @@ export function buildExtensions(get: () => EditorCallbacks, placeholderText: str
     // Autocierre de { } [ ] y " ": al escribir la apertura se añade el cierre (y envuelve la selección).
     closeBrackets(),
     bracketScopeField,
+    search({ top: true, createPanel: createSearchPanel }),
+    // Al seleccionar un texto, resalta sus otras apariciones.
+    highlightSelectionMatches(),
     indentUnit.of(INDENT),
     json(),
     jsonHighlighting,
     editorTheme,
+    searchTheme,
     errorLine,
     placeholder(placeholderText),
     EditorView.contentAttributes.of({ "aria-label": "Editor JSON", spellcheck: "false" }),

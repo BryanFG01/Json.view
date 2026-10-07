@@ -16,6 +16,11 @@ export const TIPS = {
     desc: "Crea un enlace con el JSON comprimido dentro de la URL. No se envía a ningún servidor.",
     disabledHint: NEEDS_TEXT,
   },
+  search: {
+    title: "Buscar",
+    desc: "Busca dentro de este panel; con la pantalla dividida, cada panel tiene su propio buscador. Ctrl+H para reemplazar.",
+    keys: "Ctrl+F",
+  },
   format: { title: "Formatear", desc: "Indenta el JSON con la sangría elegida.", keys: "Shift+Alt+F", disabledHint: NEEDS_VALID },
   expandNested: {
     title: "Analizar JSON anidado",
