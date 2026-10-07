@@ -1,20 +1,23 @@
 "use client";
 
 import { useCallback, useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import { downloadText, DOWNLOAD_FILENAME } from "../utils/fileIO";
+import type { DocLanguage } from "../../domain/models/json";
+import { downloadText } from "../utils/fileIO";
 
 interface FileTransferParams {
   text: string;
-  onLoad: (text: string) => void;
+  language: DocLanguage;
+  /** Recibe también el nombre del archivo (la extensión .sql/.json ayuda a elegir el modo). */
+  onLoad: (text: string, fileName: string) => void;
 }
 
 /** Subir (selector o arrastrar y soltar) y descargar archivos. Todo local, con FileReader/Blob. */
-export function useFileTransfer({ text, onLoad }: FileTransferParams) {
+export function useFileTransfer({ text, language, onLoad }: FileTransferParams) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setDragging] = useState(false);
 
   const readFile = useCallback((file: File | undefined) => {
-    file?.text().then(onLoad).catch(() => undefined);
+    file?.text().then((content) => onLoad(content, file.name)).catch(() => undefined);
   }, [onLoad]);
 
   const onFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
@@ -41,6 +44,6 @@ export function useFileTransfer({ text, onLoad }: FileTransferParams) {
     onDrop,
     onDragLeave: () => setDragging(false),
     openPicker: () => inputRef.current?.click(),
-    download: () => downloadText(DOWNLOAD_FILENAME, text),
+    download: () => downloadText(language, text),
   };
 }

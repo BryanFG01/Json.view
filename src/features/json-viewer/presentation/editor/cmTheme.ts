@@ -61,5 +61,11 @@ export const jsonHighlighting = syntaxHighlighting(
     { tag: t.number, color: "var(--tok-number)" },
     { tag: [t.bool, t.null], color: "var(--tok-keyword)" },
     { tag: [t.separator, t.brace, t.squareBracket], color: "var(--tok-punct)" },
+    // SQL (mismos tokens de color que JSON para que el tema sea coherente).
+    { tag: t.keyword, color: "var(--tok-keyword)", fontWeight: "600" },
+    { tag: [t.typeName, t.standard(t.name)], color: "var(--tok-number)" },
+    { tag: t.special(t.string), color: "var(--tok-key)" },
+    { tag: [t.lineComment, t.blockComment], color: "var(--muted)", fontStyle: "italic" },
+    { tag: [t.operator, t.paren, t.punctuation], color: "var(--tok-punct)" },
   ]),
 );

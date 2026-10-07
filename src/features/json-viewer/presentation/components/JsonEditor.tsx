@@ -8,7 +8,7 @@ export function JsonEditor(props: JsonEditorProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {vm.error && <ErrorBanner error={vm.error} onGoToError={vm.goToError} />}
+      {vm.error && <ErrorBanner error={vm.error} onGoToError={vm.goToError} action={vm.errorAction} />}
       <div ref={containerRef} className="min-h-0 flex-1" />
     </div>
   );

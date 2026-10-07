@@ -20,7 +20,7 @@ interface JsonPaneProps {
 
 /** Un panel completo: barra de acciones, editor o árbol, barra de estado y subida de archivos. */
 export function JsonPane({ doc, id, label, className = "" }: JsonPaneProps) {
-  const { inputRef, ...files } = useFileTransfer({ text: doc.text, onLoad: doc.replace });
+  const { inputRef, ...files } = useFileTransfer({ text: doc.text, language: doc.language, onLoad: doc.loadText });
 
   return (
     <section aria-label={label} data-pane={id} className={`flex min-h-0 min-w-0 flex-1 flex-col ${className}`}>

@@ -32,6 +32,17 @@ export function describeScope(scope: { openLine: number; closeLine: number } | n
   return `Bloque: líneas ${scope.openLine}–${scope.closeLine}`;
 }
 
+/** Barra de estado en modo SQL: no se valida la sintaxis, solo se informa el dialecto. */
+export function buildSqlStatus(text: string, dialectLabel: string): StatusSummary {
+  return {
+    label: "SQL",
+    tone: "info",
+    detail: `Dialecto: ${dialectLabel}`,
+    size: formatBytes(byteLength(text)),
+    lines: countLines(text),
+  };
+}
+
 export function buildStatus(text: string, parsed: JsonParseResult): StatusSummary {
   return {
     ...describeResult(parsed),

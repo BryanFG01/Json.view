@@ -1,5 +1,6 @@
 import { Check, Copy } from "lucide-react";
-import type { IndentOption } from "../../domain/models/json";
+import type { IndentOption, SqlDialect } from "../../domain/models/json";
+import { SQL_DIALECTS } from "../utils/sqlOptions.constants";
 import type { JsonDocumentVM } from "../hooks/useJsonDocument";
 import { INDENT_OPTIONS } from "../utils/options.constants";
 import { TONE_CLASS } from "../utils/styles.constants";
@@ -31,6 +32,19 @@ export function StatusBar({ vm }: { vm: JsonDocumentVM["status"] }) {
         vm.detail && <span className="hidden truncate sm:inline">{vm.detail}</span>
       )}
       <span className="ml-auto whitespace-nowrap">{vm.lines} líneas · {vm.size}</span>
+      {vm.isSql && (
+        <select
+          aria-label={TIPS.dialect.title}
+          {...tipAttrs(TIPS.dialect)}
+          value={vm.dialect}
+          onChange={(e) => vm.onDialectChange(e.target.value as SqlDialect)}
+          className="max-w-36 rounded border border-border bg-bg px-1 py-0.5 text-fg outline-none focus-visible:border-accent"
+        >
+          {SQL_DIALECTS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      )}
       <label className="flex items-center gap-1.5" {...tipAttrs(TIPS.indent)}>
         <span className="hidden lg:inline">Sangría</span>
         <select

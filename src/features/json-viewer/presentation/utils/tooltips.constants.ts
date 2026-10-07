@@ -7,6 +7,12 @@ const NEEDS_TEXT = "El panel está vacío.";
 export const TIPS = {
   editor: { title: "Editor", desc: "Edita el JSON como texto, con colores, numeración y plegado." },
   tree: { title: "Árbol", desc: "Explora la estructura: abre y cierra nodos y copia cualquier parte." },
+  langJson: { title: "Modo JSON", desc: "Valida, formatea, ordena y explora el contenido como JSON." },
+  langSql: {
+    title: "Modo SQL",
+    desc: "Trata el contenido como una consulta SQL: colores de SQL y Formatear según el dialecto. Se activa solo al pegar SQL.",
+  },
+  dialect: { title: "Dialecto SQL", desc: "Ajusta el formateo a la sintaxis de tu base de datos (comillas, LIMIT/TOP, etc.)." },
   sample: { title: "Cargar ejemplo", desc: "Carga un JSON de ejemplo para probar las herramientas." },
   upload: { title: "Subir archivo", desc: "Abre un .json o .txt de tu equipo. También puedes arrastrarlo al editor." },
   download: { title: "Descargar", desc: "Guarda el contenido del panel como data.json.", disabledHint: NEEDS_TEXT },
@@ -27,7 +33,11 @@ export const TIPS = {
     desc: 'Convierte en objetos los textos que contienen JSON (p. ej. "{\\"a\\":1}") y formatea.',
     disabledHint: NEEDS_VALID,
   },
-  sort: { title: "Ordenar", desc: "Ordena las claves (A→Z, Z→A) o los valores de los arrays (1, 2, 10…).", disabledHint: NEEDS_VALID },
+  sort: {
+    title: "Ordenar",
+    desc: "Ordena claves (A→Z, Z→A), valores de arrays (1, 2, 10…) o arrays de objetos por un campo, en todos los niveles. Puede aplicarse solo al bloque del cursor.",
+    disabledHint: NEEDS_VALID,
+  },
   minify: { title: "Minificar", desc: "Quita espacios y saltos de línea: todo el JSON en una sola línea.", disabledHint: NEEDS_VALID },
   escape: {
     title: "Escapar como string",

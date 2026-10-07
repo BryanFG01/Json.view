@@ -1,6 +1,5 @@
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { cursorMatchingBracket, defaultKeymap } from "@codemirror/commands";
-import { json } from "@codemirror/lang-json";
 import { bracketMatching, codeFolding, foldGutter, foldKeymap, indentUnit } from "@codemirror/language";
 import { Annotation, type Extension } from "@codemirror/state";
 import {
@@ -11,6 +10,7 @@ import { bracketScopeField, type BracketScope } from "./cmBracketScope";
 import { createSearchPanel, openReplacePanel } from "./cmSearchPanel";
 import { searchTheme } from "./cmSearchTheme";
 import { errorLine } from "./cmErrorLine";
+import { languageCompartment } from "./cmLanguage";
 import { editorTheme, jsonHighlighting } from "./cmTheme";
 
 /** Marca los cambios que vienen de React (deshacer, formatear…) para no reenviarlos como escritura. */
@@ -90,7 +90,8 @@ function events(get: () => EditorCallbacks): Extension {
   ];
 }
 
-export function buildExtensions(get: () => EditorCallbacks, placeholderText: string): Extension[] {
+/** `language`: extensión inicial de JSON o SQL (ver cmLanguage.ts); se cambia luego por compartimento. */
+export function buildExtensions(get: () => EditorCallbacks, placeholderText: string, language: Extension): Extension[] {
   return [
     lineNumbers(),
     codeFolding(),
@@ -106,7 +107,7 @@ export function buildExtensions(get: () => EditorCallbacks, placeholderText: str
     // Al seleccionar un texto, resalta sus otras apariciones.
     highlightSelectionMatches(),
     indentUnit.of(INDENT),
-    json(),
+    languageCompartment.of(language),
     jsonHighlighting,
     editorTheme,
     searchTheme,

@@ -20,12 +20,13 @@ export const KIND_CLASS: Record<JsonKind, string> = {
   null: "text-tok-keyword",
 };
 
-export type StatusTone = "ok" | "error" | "idle";
+export type StatusTone = "ok" | "error" | "idle" | "info";
 
 export const TONE_CLASS: Record<StatusTone, string> = {
   ok: "text-ok",
   error: "text-err",
   idle: "text-muted",
+  info: "text-accent",
 };
 
 export const DIFF_CELL_CLASS: Record<DiffCellKind, string> = {

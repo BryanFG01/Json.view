@@ -5,7 +5,9 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useRef } from "react";
 import { setErrorOffset } from "../editor/cmErrorLine";
+import type { DocLanguage, SqlDialect } from "../../domain/models/json";
 import { buildExtensions, externalChange, type EditorCallbacks } from "../editor/cmExtensions";
+import { languageCompartment, languageExtension } from "../editor/cmLanguage";
 
 interface CodeMirrorParams extends EditorCallbacks {
   text: string;
@@ -15,6 +17,8 @@ interface CodeMirrorParams extends EditorCallbacks {
   /** Petición de abrir el buscador de este editor (Ctrl+F fuera del editor o botón Buscar). */
   searchPending: boolean;
   onSearchOpened: () => void;
+  language: DocLanguage;
+  dialect: SqlDialect;
 }
 
 /**
@@ -22,7 +26,7 @@ interface CodeMirrorParams extends EditorCallbacks {
  * Lo que escribe el usuario sube por onChange; los cambios externos bajan con `externalChange`.
  */
 export function useCodeMirror(params: CodeMirrorParams) {
-  const { text, errorOffset, autoFocus, placeholder, searchPending, onSearchOpened, ...callbacks } = params;
+  const { text, errorOffset, autoFocus, placeholder, searchPending, onSearchOpened, language, dialect, ...callbacks } = params;
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const callbacksRef = useRef(callbacks);
@@ -45,7 +49,10 @@ export function useCodeMirror(params: CodeMirrorParams) {
     });
     const view = new EditorView({
       parent,
-      state: EditorState.create({ doc: syncedRef.current, extensions: buildExtensions(getCallbacks, placeholder) }),
+      state: EditorState.create({
+        doc: syncedRef.current,
+        extensions: buildExtensions(getCallbacks, placeholder, languageExtension(language, dialect)),
+      }),
     });
     viewRef.current = view;
     if (autoFocus) view.focus();
@@ -72,6 +79,10 @@ export function useCodeMirror(params: CodeMirrorParams) {
   useEffect(() => {
     viewRef.current?.dispatch({ effects: setErrorOffset.of(errorOffset) });
   }, [errorOffset]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: languageCompartment.reconfigure(languageExtension(language, dialect)) });
+  }, [language, dialect]);
 
   useEffect(() => {
     const view = viewRef.current;

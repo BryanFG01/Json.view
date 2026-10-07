@@ -17,15 +17,20 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | application | `useCases/expandNestedJson.ts` | Analiza JSON anidado: strings con JSON serializado (incluso doble) → objetos |
 | application | `useCases/diffLines.ts` | Diferencia línea a línea (Myers O(ND), recorta prefijo/sufijo comunes) |
 | application | `useCases/sortJson.ts` | Ordena claves (A→Z / Z→A) y arrays en orden natural (`item2` < `item10`, números por valor); serializa directo para respetar el orden aun con claves numéricas |
+| application | `useCases/sortBlock.ts` | Ordenar solo el bloque del cursor (re-indentado en su sitio) y `collectArrayFields` (campos de los arrays de objetos) |
+| application | `useCases/detectLanguage.ts` | Decide JSON o SQL para un texto nuevo (JSON válido gana; luego extensión `.sql`/`.json`; luego si empieza como SQL) |
+| application | `useCases/formatSql.ts` | Formatea SQL con `sql-formatter` (carga diferida): MAYÚSCULAS en palabras clave, funciones y tipos; dialecto y sangría |
 | application | `useCases/prepareDiff.ts` | Normaliza ambos lados antes de comparar (formato común + opciones de orden) |
 | presentation/editor | `cmExtensions.ts` | Extensiones de CodeMirror: numeración, plegado, atajos, pegar, `externalChange` |
 | | `cmTheme.ts` | Tema y colores de sintaxis con las variables CSS (claro/oscuro sin reconfigurar) |
 | | `cmErrorLine.ts` | Marca la línea del error de sintaxis (fondo + margen) |
+| | `cmLanguage.ts` | Compartimento de lenguaje: JSON o SQL (con dialecto) sin recrear el editor |
 | | `cmSearchPanel.ts`, `cmSearchCount.ts`, `cmSearchTheme.ts` | Buscador propio de cada editor (español, contador "3 de 12", Aa / palabra / regex, reemplazar) |
 | | `cmBracketScope.ts` | Bloque { } / [ ] del cursor pintado en el margen (fuerte sobre una llave, suave dentro de un bloque) |
 | presentation/hooks | `useJsonViewer` | Hook de página: documento izquierdo/derecho, dividir pantalla, comparar, tema |
 | | `useJsonDocument` | Estado de un panel (historial, parseo, vista, sangría, acciones) |
 | | `useJsonEditor` → `useCodeMirror` | Monta CodeMirror como vista controlada por React; ir al error |
+| | `useSqlMode` | Modo JSON/SQL del panel, dialecto y formateo SQL (el error se descarta solo al editar) |
 | | `useFindShortcut` | Ctrl+F abre el buscador del panel activo (foco o último clic), no el del navegador |
 | | `useJsonDiff`, `useEscapeKey` | View model de la comparación (con opciones de orden); salir con Esc |
 | | `useSortMenu` | Menú "Ordenar" de cada panel (posición `fixed` para no quedar recortado por la barra) |
@@ -47,6 +52,7 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 ## Funcionalidades
 - Validación en vivo con línea/columna del error, línea marcada en rojo y botón "Ir al error".
 - **Plegado de bloques** (⌄ / › en el margen; atajos Ctrl+Shift+[ y Ctrl+Shift+]).
+- **Modo SQL** (interruptor `JSON | SQL` en cada panel): colores de SQL y **Formatear** (botón o Shift+Alt+F) con palabras clave, funciones y tipos en MAYÚSCULAS, una cláusula por línea y la sangría del panel. Dialectos: estándar, PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, BigQuery (selector en la barra de estado; cambiarlo reformatea). Se activa solo al pegar SQL en un panel vacío (y lo formatea), al subir un `.sql` o con el botón "Parece SQL: cambiar a modo SQL" del aviso de error. Descarga como `consulta.sql`. En SQL, Árbol y las acciones de JSON se desactivan con tooltip "Solo disponible en modo JSON". Cada panel tiene su propio modo.
 - **Buscar y reemplazar dentro del editor** (Ctrl+F / Ctrl+H o botón lupa): la barra se abre dentro del panel; con la pantalla dividida, cada panel tiene su propio buscador independiente. Contador ("3 de 12", "Sin resultados", "Regex no válida"), Enter / Shift+Enter (o F3) para siguiente/anterior, mayúsculas, palabra completa, regex, reemplazar uno o todos (se puede deshacer). Coincidencias resaltadas; al seleccionar texto se marcan sus otras apariciones. En la vista Árbol, Ctrl+F vuelve al Editor; en Comparar, Ctrl+F queda para el navegador.
 - **Autocierre** de `{ }`, `[ ]` y `" "`: al escribir la apertura se añade el cierre; escribir el cierre lo salta; Backspace en un par vacío borra los dos; con texto seleccionado lo envuelve; Enter entre llaves abre el bloque con sangría.
 - **Llaves emparejadas**: al pararse (clic o flechas) junto a `{ } [ ]` se resaltan la apertura y el cierre, y la columna de números se pinta del bloque completo (apertura/cierre intensos, intermedias suaves). Dentro de un bloque, marca suave del bloque que lo contiene. La barra de estado muestra "Bloque: líneas X–Y"; Ctrl+Shift+\ salta a la llave pareja. En bloques de más de 3.000 líneas solo se marcan apertura y cierre.
@@ -56,7 +62,11 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 - Analizar JSON anidado y formatear (botón de capas): convierte strings con JSON adentro en objetos.
 - Pegar en un editor vacío formatea automáticamente si es JSON válido.
 - Dividir pantalla: dos paneles independientes (cada uno con su historial, vista y archivos).
-- **Ordenar** (botón en cada panel, también al dividir): claves A→Z, Z→A, valores de arrays, o todo. Orden natural (`item2` antes que `item10`, `9` antes que `10`); se puede deshacer.
+- **Ordenar** (botón en cada panel, también al dividir), en todos los niveles de anidación:
+  - Claves A→Z / Z→A, valores de arrays, o todo. Orden natural (`item2` antes que `item10`, `9` antes que `10`).
+  - **Arrays de objetos por campo** (asc/desc): el menú propone los campos reales de los arrays de objetos del JSON; se aplica a todos los arrays anidados que tengan ese campo; los elementos sin el campo van al final.
+  - **Aplicar a**: todo el JSON o **solo el bloque `{ }` / `[ ]` del cursor** (se ordena en su sitio, con su sangría; el resto no cambia).
+  - Se puede deshacer.
 - Comparar: diferencias lado a lado (rojo = quitado, verde = agregado, rayado = sin línea), contador +/−, selector de orden de claves (original / A→Z / Z→A) y "Ordenar arrays" (solo afecta a la vista, no a los textos), Esc para salir.
 - Vista en árbol con `<details>/<summary>` (colapsar sin JS extra) y colores por tipo.
 - Subir archivo, arrastrar y soltar, descargar, copiar.
@@ -113,7 +123,8 @@ Decisiones tomadas: CodeMirror 6 antes de la tarea 1 · árbol híbrido (`<detai
 ## Notas
 - Sin backend: no aplican `infrastructure/`, `domain/ports/` ni `runAction`. Si se agrega persistencia (p. ej. historial en servidor), seguir el patrón puerto → repositorio → action.
 - `highlight.ts` ya solo colorea la vista Comparar; se desactiva por encima de 200 000 caracteres (`HIGHLIGHT_MAX_CHARS`). El editor usa el parser de CodeMirror.
-- Dependencias de CodeMirror (~75 KB gzip): `@codemirror/{state,view,language,lang-json,commands}`, `@lezer/highlight`, `@codemirror/autocomplete` (solo `closeBrackets`, el autocierre) y `@codemirror/search` (motor de búsqueda; la barra es propia).
+- Dependencias de CodeMirror (~75 KB gzip): `@codemirror/{state,view,language,lang-json,commands}`, `@lezer/highlight`, `@codemirror/autocomplete` (solo `closeBrackets`, el autocierre) y `@codemirror/search` (motor de búsqueda; la barra es propia), `@codemirror/lang-sql` (colores de SQL).
+- `sql-formatter` (~286 KB sin comprimir) se carga **solo al formatear SQL** (import dinámico, chunk aparte; verificado que la página inicial no lo incluye).
 
 ## Tests
 | Tipo | Comando | Qué cubre |
@@ -127,7 +138,7 @@ E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 53/53 ✔ · `npm run test:e2e`: 18/18 ✔ (en `e2e/editor`, `navigation`, `search`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
+- `npm test`: 73/73 ✔ · `npm run test:e2e`: 25/25 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

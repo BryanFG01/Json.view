@@ -35,6 +35,34 @@ function compareItems(a: Item, b: Item): number {
   return compareNatural(a.text, b.text);
 }
 
+const isObject = (value: JsonValue): value is Record<string, JsonValue> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+/**
+ * Compara objetos por un campo. Los que no tienen el campo (o no son objetos) van siempre al
+ * final, sin importar la dirección; entre iguales se conserva el orden original (sort estable).
+ */
+function compareByField(key: string, desc: boolean) {
+  return (a: Item, b: Item): number => {
+    const aHas = isObject(a.value) && key in a.value;
+    const bHas = isObject(b.value) && key in b.value;
+    if (!aHas || !bHas) return Number(!aHas) - Number(!bHas);
+    const av = (a.value as Record<string, JsonValue>)[key];
+    const bv = (b.value as Record<string, JsonValue>)[key];
+    const result = compareItems({ value: av, text: JSON.stringify(av) }, { value: bv, text: JSON.stringify(bv) });
+    return desc ? -result : result;
+  };
+}
+
+function sortItems(items: Item[], options: SortOptions): void {
+  const byField = options.byField;
+  if (byField && items.some((item) => isObject(item.value) && byField.key in item.value)) {
+    items.sort(compareByField(byField.key, byField.desc));
+  } else if (options.arrays) {
+    items.sort(compareItems);
+  }
+}
+
 function orderKeys(keys: string[], order: SortOptions["keys"]): string[] {
   if (order === "original") return keys;
   const sorted = [...keys].sort(compareNatural);
@@ -48,7 +76,7 @@ function serialize(value: JsonValue, options: SortOptions, unit: string, depth: 
 
   if (Array.isArray(value)) {
     const items = value.map((item) => ({ value: item, text: serialize(item, options, unit, depth + 1) }));
-    if (options.arrays) items.sort(compareItems);
+    sortItems(items, options);
     return items.length === 0 ? "[]" : `[\n${items.map((i) => pad + i.text).join(",\n")}\n${close}]`;
   }
 
