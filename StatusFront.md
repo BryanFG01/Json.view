@@ -19,6 +19,7 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | application | `useCases/sortJson.ts` | Ordena claves (A→Z / Z→A) y arrays en orden natural (`item2` < `item10`, números por valor); serializa directo para respetar el orden aun con claves numéricas |
 | application | `useCases/sortBlock.ts` | Ordenar solo el bloque del cursor (re-indentado en su sitio) y `collectArrayFields` (campos de los arrays de objetos) |
 | application | `useCases/detectLanguage.ts` | Decide JSON o SQL para un texto nuevo (JSON válido gana; luego extensión `.sql`/`.json`; luego si empieza como SQL) |
+| application | `useCases/sqlText.ts` | SQL a una línea (respeta literales, `--` → `/* */`), escapar como literal `'…'` (`'` → `''`) y desescapar `'…'` / `"…"` |
 | application | `useCases/formatSql.ts` | Formatea SQL con `sql-formatter` (carga diferida): MAYÚSCULAS en palabras clave, funciones y tipos; dialecto y sangría |
 | application | `useCases/prepareDiff.ts` | Normaliza ambos lados antes de comparar (formato común + opciones de orden) |
 | presentation/editor | `cmExtensions.ts` | Extensiones de CodeMirror: numeración, plegado, atajos, pegar, `externalChange` |
@@ -30,6 +31,7 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | presentation/hooks | `useJsonViewer` | Hook de página: documento izquierdo/derecho, dividir pantalla, comparar, tema |
 | | `useJsonDocument` | Estado de un panel (historial, parseo, vista, sangría, acciones) |
 | | `useJsonEditor` → `useCodeMirror` | Monta CodeMirror como vista controlada por React; ir al error |
+| | `useSqlNormalized` | Formatea en segundo plano las dos consultas al comparar SQL |
 | | `useSqlMode` | Modo JSON/SQL del panel, dialecto y formateo SQL (el error se descarta solo al editar) |
 | | `useFindShortcut` | Ctrl+F abre el buscador del panel activo (foco o último clic), no el del navegador |
 | | `useJsonDiff`, `useEscapeKey` | View model de la comparación (con opciones de orden); salir con Esc |
@@ -52,7 +54,10 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 ## Funcionalidades
 - Validación en vivo con línea/columna del error, línea marcada en rojo y botón "Ir al error".
 - **Plegado de bloques** (⌄ / › en el margen; atajos Ctrl+Shift+[ y Ctrl+Shift+]).
-- **Modo SQL** (interruptor `JSON | SQL` en cada panel): colores de SQL y **Formatear** (botón o Shift+Alt+F) con palabras clave, funciones y tipos en MAYÚSCULAS, una cláusula por línea y la sangría del panel. Dialectos: estándar, PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, BigQuery (selector en la barra de estado; cambiarlo reformatea). Se activa solo al pegar SQL en un panel vacío (y lo formatea), al subir un `.sql` o con el botón "Parece SQL: cambiar a modo SQL" del aviso de error. Descarga como `consulta.sql`. En SQL, Árbol y las acciones de JSON se desactivan con tooltip "Solo disponible en modo JSON". Cada panel tiene su propio modo.
+- **Modo SQL** (interruptor `JSON | SQL` en cada panel): colores de SQL y **Formatear** (botón o Shift+Alt+F) con palabras clave, funciones y tipos en MAYÚSCULAS, una cláusula por línea y la sangría del panel. Dialectos: estándar, PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, BigQuery (selector en la barra de estado; cambiarlo reformatea). Se activa solo al pegar SQL en un panel vacío (y lo formatea), al subir un `.sql` o con el botón "Parece SQL: cambiar a modo SQL" del aviso de error. Descarga como `consulta.sql`. Cada panel tiene su propio modo.
+  - En SQL también: **Minificar** (una línea; respeta textos e identificadores entre comillas, `--` pasa a `/* */`), **Escapar como texto SQL** (`'…'` con `'` → `''`, listo para `INSERT … VALUES ('…')`), **Desescapar** (`'…'` o `"…"`), buscar, copiar bloque, compartir.
+  - Solo JSON (desactivados en SQL con tooltip "Solo disponible en modo JSON"): Árbol, Ordenar, Analizar JSON anidado.
+  - **Comparar SQL**: con "Normalizar formato SQL" (activo por defecto) formatea ambas consultas antes del diff, así solo marca cambios reales; colores de SQL en el diff. Si un panel es JSON y el otro SQL, se compara el texto tal cual con un aviso neutro.
 - **Buscar y reemplazar dentro del editor** (Ctrl+F / Ctrl+H o botón lupa): la barra se abre dentro del panel; con la pantalla dividida, cada panel tiene su propio buscador independiente. Contador ("3 de 12", "Sin resultados", "Regex no válida"), Enter / Shift+Enter (o F3) para siguiente/anterior, mayúsculas, palabra completa, regex, reemplazar uno o todos (se puede deshacer). Coincidencias resaltadas; al seleccionar texto se marcan sus otras apariciones. En la vista Árbol, Ctrl+F vuelve al Editor; en Comparar, Ctrl+F queda para el navegador.
 - **Autocierre** de `{ }`, `[ ]` y `" "`: al escribir la apertura se añade el cierre; escribir el cierre lo salta; Backspace en un par vacío borra los dos; con texto seleccionado lo envuelve; Enter entre llaves abre el bloque con sangría.
 - **Llaves emparejadas**: al pararse (clic o flechas) junto a `{ } [ ]` se resaltan la apertura y el cierre, y la columna de números se pinta del bloque completo (apertura/cierre intensos, intermedias suaves). Dentro de un bloque, marca suave del bloque que lo contiene. La barra de estado muestra "Bloque: líneas X–Y"; Ctrl+Shift+\ salta a la llave pareja. En bloques de más de 3.000 líneas solo se marcan apertura y cierre.
@@ -138,7 +143,7 @@ E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 73/73 ✔ · `npm run test:e2e`: 25/25 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
+- `npm test`: 81/81 ✔ · `npm run test:e2e`: 27/27 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

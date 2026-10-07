@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import type { DocLanguage, IndentOption, SqlDialect } from "../../domain/models/json";
 import { formatSqlUseCase } from "../../application/useCases/formatSql";
+import { fromSqlLiteralUseCase, minifySqlUseCase, toSqlLiteralUseCase } from "../../application/useCases/sqlText";
 
 interface SqlModeParams {
   text: string;
@@ -43,6 +44,8 @@ export function useSqlMode({ text, indent, replace }: SqlModeParams) {
     void formatSql({ dialect: next });
   };
 
+  const unescaped = language === "sql" ? fromSqlLiteralUseCase(text) : null;
+
   return {
     language,
     isSql: language === "sql",
@@ -51,5 +54,14 @@ export function useSqlMode({ text, indent, replace }: SqlModeParams) {
     setDialect,
     formatSql,
     sqlError: failure && failure.forText === text ? failure.message : null,
+    /** Acciones de la barra equivalentes a las de JSON, aplicadas a la consulta. */
+    actions: {
+      minify: () => replace(minifySqlUseCase(text)),
+      escape: () => replace(toSqlLiteralUseCase(text)),
+      unescape: () => {
+        if (unescaped !== null) replace(unescaped);
+      },
+      canUnescape: unescaped !== null,
+    },
   };
 }

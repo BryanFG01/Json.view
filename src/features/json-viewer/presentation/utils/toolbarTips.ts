@@ -14,9 +14,24 @@ const SQL_TIPS = {
   },
   expandNested: { ...TIPS.expandNested, disabledHint: JSON_ONLY },
   sort: { ...TIPS.sort, disabledHint: JSON_ONLY },
-  minify: { ...TIPS.minify, disabledHint: JSON_ONLY },
-  escape: { ...TIPS.escape, disabledHint: JSON_ONLY },
-  unescape: { ...TIPS.unescape, disabledHint: JSON_ONLY },
+  minify: {
+    ...TIPS.minify,
+    title: "Minificar",
+    desc: "Deja la consulta en una sola línea. Respeta los textos entre comillas; los comentarios -- pasan a /* */.",
+    disabledHint: "Escribe o pega una consulta.",
+  },
+  escape: {
+    ...TIPS.escape,
+    title: "Escapar como texto SQL",
+    desc: "Envuelve la consulta en comillas simples '…' duplicando las internas (' → ''), lista para un INSERT … VALUES ('…').",
+    disabledHint: "Escribe o pega una consulta.",
+  },
+  unescape: {
+    ...TIPS.unescape,
+    title: "Desescapar texto",
+    desc: "Quita las comillas de un texto '…' (o \"…\") y restaura las comillas internas.",
+    disabledHint: "Solo se activa cuando el contenido es un texto entre comillas '…' o \"…\".",
+  },
   tree: { ...TIPS.tree, disabledHint: JSON_ONLY },
 };
 

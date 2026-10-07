@@ -1,4 +1,4 @@
-export type TokenType = "key" | "string" | "number" | "keyword" | "punct" | "plain";
+export type TokenType = "key" | "string" | "number" | "keyword" | "punct" | "plain" | "comment";
 
 export interface Token {
   type: TokenType;

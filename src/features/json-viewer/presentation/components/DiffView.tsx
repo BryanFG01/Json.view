@@ -34,31 +34,39 @@ export function DiffView(props: JsonDiffProps) {
             <span className="text-err">−{vm.table.removed}</span> líneas
           </span>
         )}
-        <select
-          aria-label={TIPS.diffKeyOrder.title}
-          {...tipAttrs(TIPS.diffKeyOrder)}
-          value={vm.sort.keys}
-          onChange={(e) => vm.setKeyOrder(e.target.value as KeyOrder)}
-          className="rounded border border-border bg-bg px-1.5 py-0.5 text-xs text-fg outline-none focus-visible:border-accent"
-        >
-          {KEY_ORDER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
-        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted" {...tipAttrs(TIPS.diffArrays)}>
-          <input type="checkbox" checked={vm.sort.arrays} onChange={vm.toggleSortArrays} className="accent-accent" />
-          Ordenar arrays (1, 2, 10…)
-        </label>
-        {vm.comparesRawText && vm.hasBoth && (
-          <span className="hidden text-xs text-err sm:inline">Uno de los JSON no es válido: se compara el texto tal cual</span>
+        {vm.mode === "json" && (
+          <>
+            <select
+              aria-label={TIPS.diffKeyOrder.title}
+              {...tipAttrs(TIPS.diffKeyOrder)}
+              value={vm.sort.keys}
+              onChange={(e) => vm.setKeyOrder(e.target.value as KeyOrder)}
+              className="rounded border border-border bg-bg px-1.5 py-0.5 text-xs text-fg outline-none focus-visible:border-accent"
+            >
+              {KEY_ORDER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted" {...tipAttrs(TIPS.diffArrays)}>
+              <input type="checkbox" checked={vm.sort.arrays} onChange={vm.toggleSortArrays} className="accent-accent" />
+              Ordenar arrays (1, 2, 10…)
+            </label>
+          </>
         )}
+        {vm.mode === "sql" && (
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted" {...tipAttrs(TIPS.diffNormalizeSql)}>
+            <input type="checkbox" checked={vm.normalizeSql} onChange={vm.toggleNormalizeSql} className="accent-accent" />
+            Normalizar formato SQL
+          </label>
+        )}
+        {vm.notice && <span className={`hidden text-xs sm:inline ${vm.notice.tone === "error" ? "text-err" : "text-muted"}`}>{vm.notice.text}</span>}
         <button type="button" onClick={vm.onClose} {...tipAttrs(TIPS.exitDiff)} className="ml-auto flex items-center gap-1.5 rounded px-2 py-1 text-xs text-muted hover:bg-hover hover:text-fg">
           <X className="size-3.5" /> Salir <kbd className="rounded border border-border px-1 font-mono text-[10px]">Esc</kbd>
         </button>
       </div>
 
-      {!vm.hasBoth && <Message>Escribe o pega un JSON en cada panel para compararlos. Pulsa Esc para volver.</Message>}
-      {vm.isIdentical && <Message>Los dos JSON son idénticos.</Message>}
+      {!vm.hasBoth && <Message>Escribe o pega un JSON o una consulta SQL en cada panel para compararlos. Pulsa Esc para volver.</Message>}
+      {vm.isIdentical && <Message>{vm.identicalMessage}</Message>}
 
       {vm.view && !vm.isIdentical && (
         <div className="min-h-0 flex-1 overflow-auto py-2 font-mono text-[13px] leading-[21px]">

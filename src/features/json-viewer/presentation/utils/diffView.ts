@@ -25,7 +25,7 @@ export interface DiffViewModel {
 
 const count = (n: number) => n.toLocaleString("es");
 
-const withTokens = (cell: DiffCellData): DiffCellVM => ({ ...cell, tokens: tokenizeJson(cell.text) });
+type Tokenizer = (text: string) => Token[];
 
 /** Marca qué filas quedan a DIFF_CONTEXT o menos de algún cambio (dos pasadas, O(n)). */
 function visibleMask(rows: DiffRowData[]): boolean[] {
@@ -47,12 +47,18 @@ function visibleMask(rows: DiffRowData[]): boolean[] {
  * Vista de la comparación: cambios con contexto, bloques iguales colapsados (`gap`) que se
  * revelan por partes, y un máximo de `limit` filas dibujadas. Solo se colorean las filas visibles.
  */
-export function buildDiffView(rows: DiffRowData[], revealed: Record<string, number>, limit: number): DiffViewModel {
+export function buildDiffView(
+  rows: DiffRowData[],
+  revealed: Record<string, number>,
+  limit: number,
+  tokenize: Tokenizer = tokenizeJson,
+): DiffViewModel {
   const mask = visibleMask(rows);
   const items: DiffItem[] = [];
   let drawn = 0;
   let i = 0;
 
+  const withTokens = (cell: DiffCellData): DiffCellVM => ({ ...cell, tokens: tokenize(cell.text) });
   const pushRow = (index: number) => {
     items.push({ type: "row", id: `r${index}`, left: withTokens(rows[index].left), right: withTokens(rows[index].right) });
     drawn++;

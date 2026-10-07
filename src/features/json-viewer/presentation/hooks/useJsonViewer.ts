@@ -35,8 +35,8 @@ export function useJsonViewer() {
       },
     },
     diff: {
-      left: { text: left.text, parsed: left.parsed },
-      right: { text: right.text, parsed: right.parsed },
+      left: { text: left.text, parsed: left.parsed, language: left.language, dialect: left.dialect },
+      right: { text: right.text, parsed: right.parsed, language: right.language, dialect: right.dialect },
       onClose: closeDiff,
     },
   };

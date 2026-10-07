@@ -101,14 +101,18 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
     parsed,
     mode,
     language: sql.language,
+    dialect: sql.dialect,
     replace,
     loadText,
     openSearch,
     toolbar: {
       openSearch,
       ...actions,
+      // En SQL, Minificar / Escapar / Desescapar actúan sobre la consulta (ver useSqlMode).
+      ...(isSql ? sql.actions : {}),
       ...share,
       format,
+      canTransform: isSql ? text.trim().length > 0 : actions.isValid,
       sort,
       sortContext: { blockLabel: scope ? `Líneas ${scope.openLine}–${scope.closeLine}` : null, getArrayFields },
       isSql,

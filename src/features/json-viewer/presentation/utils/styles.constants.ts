@@ -9,6 +9,7 @@ export const TOKEN_CLASS: Record<TokenType, string> = {
   keyword: "text-tok-keyword",
   punct: "text-tok-punct",
   plain: "",
+  comment: "text-muted italic",
 };
 
 export const KIND_CLASS: Record<JsonKind, string> = {

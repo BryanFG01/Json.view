@@ -38,8 +38,8 @@ export function Toolbar({ vm, onUpload, onDownload }: ToolbarProps) {
         <ToolbarButton icon={AlignLeft} tip={tips.format} onClick={vm.format} disabled={!vm.canFormat} />
         <ToolbarButton icon={Layers} tip={tips.expandNested} onClick={vm.expandNested} disabled={!vm.isValid} />
         <SortMenu tip={tips.sort} disabled={!vm.isValid} onSort={vm.sort} context={vm.sortContext} />
-        <ToolbarButton icon={Minimize2} tip={tips.minify} onClick={vm.minify} disabled={!vm.isValid} />
-        <ToolbarButton icon={Quote} tip={tips.escape} onClick={vm.escape} disabled={!vm.isValid} />
+        <ToolbarButton icon={Minimize2} tip={tips.minify} onClick={vm.minify} disabled={!vm.canTransform} />
+        <ToolbarButton icon={Quote} tip={tips.escape} onClick={vm.escape} disabled={!vm.canTransform} />
         <ToolbarButton icon={Braces} tip={tips.unescape} onClick={vm.unescape} disabled={!vm.canUnescape} />
         <ToolbarButton icon={Trash2} tip={tips.clear} onClick={vm.clear} disabled={!vm.hasText} />
         <Divider />

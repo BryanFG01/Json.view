@@ -62,6 +62,10 @@ export const TIPS = {
   indent: { title: "Sangría", desc: "Espacios de indentación al formatear. Si el JSON es válido, se reformatea al cambiarla." },
   exitDiff: { title: "Salir de Comparar", desc: "Vuelve a los editores.", keys: "Esc" },
   diffKeyOrder: { title: "Orden de las claves", desc: "Ordena las claves de ambos lados antes de comparar. No cambia tus textos." },
+  diffNormalizeSql: {
+    title: "Normalizar formato SQL",
+    desc: "Formatea las dos consultas igual antes de comparar: así solo se marcan los cambios reales, no espacios, saltos de línea ni mayúsculas.",
+  },
   diffArrays: { title: "Ordenar arrays", desc: "Ordena los valores de los arrays de ambos lados antes de comparar." },
 } satisfies Record<string, Tip>;
 

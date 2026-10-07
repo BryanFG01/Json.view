@@ -45,8 +45,53 @@ test("el dialecto se aplica al formatear y las acciones de JSON explican que no 
   await pane.getByRole("combobox", { name: "Dialecto SQL" }).selectOption("tsql");
   await expect.poll(() => editorText(pane)).toBe("SELECT\n  TOP 5 [nombre]\nFROM\n  clientes");
 
-  await pane.locator('[data-tip="Minificar"]').hover();
+  await pane.locator('[data-tip="Ordenar"]').hover();
   await expect(page.getByRole("tooltip")).toContainText("Solo disponible en modo JSON");
+});
+
+test("en SQL: minificar a una línea, escapar como texto '…' para un INSERT y desescapar", async ({ page }) => {
+  const pane = leftPane(page);
+  await pane.getByRole("button", { name: "Modo SQL" }).click();
+  await typeJson(pane, "select nombre from clientes where apodo = 'O''Brien'");
+  await pane.getByRole("button", { name: "Formatear", exact: true }).click();
+  await expect.poll(() => editorText(pane)).toContain("\nFROM\n");
+
+  await pane.getByRole("button", { name: "Minificar" }).click();
+  await expect.poll(() => editorText(pane)).toBe("SELECT nombre FROM clientes WHERE apodo = 'O''Brien'");
+
+  await pane.getByRole("button", { name: "Escapar como texto SQL" }).click();
+  await expect.poll(() => editorText(pane)).toBe("'SELECT nombre FROM clientes WHERE apodo = ''O''''Brien'''");
+
+  await pane.getByRole("button", { name: "Desescapar texto" }).click();
+  await expect.poll(() => editorText(pane)).toBe("SELECT nombre FROM clientes WHERE apodo = 'O''Brien'");
+});
+
+test("comparar dos consultas SQL normaliza el formato y solo marca cambios reales", async ({ page }) => {
+  await page.getByRole("button", { name: "Dividir pantalla" }).click();
+  for (const [pane, query] of [
+    [leftPane(page), "select id, nombre from clientes where activo = 1"],
+    [rightPane(page), "SELECT id,   nombre, email\nFROM clientes   WHERE activo = 1"],
+  ] as const) {
+    await pane.getByRole("button", { name: "Modo SQL" }).click();
+    await typeJson(pane, query);
+  }
+  await page.getByRole("button", { name: "Comparar" }).click();
+
+  await expect(page.getByLabel("Normalizar formato SQL")).toBeChecked();
+  await expect(page.getByText("+2", { exact: true })).toBeVisible();
+  await expect(page.getByText("−1", { exact: true })).toBeVisible();
+  await expect(page.getByText(/no es válido/)).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Orden de las claves" })).toHaveCount(0);
+
+  // Normalizado: una fila por línea formateada (SELECT, id, nombre, email, FROM, clientes, WHERE) y la última
+  // ("activo = 1", a más de 3 líneas del cambio) queda colapsada en "Mostrar 1 de 1 líneas sin cambios".
+  const rows = page.locator(".grid.grid-cols-2");
+  await expect(rows).toHaveCount(7);
+  await expect(page.getByRole("button", { name: /líneas sin cambios/ })).toBeVisible();
+
+  // Sin normalizar se compara el texto tal cual: 1 línea contra 2, ninguna igual.
+  await page.getByLabel("Normalizar formato SQL").uncheck();
+  await expect(rows).toHaveCount(2);
 });
 
 test("sube un .sql, lo detecta y lo descarga como consulta.sql", async ({ page }) => {
