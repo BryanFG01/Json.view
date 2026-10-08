@@ -20,7 +20,9 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | application | `useCases/sortBlock.ts` | Ordenar solo el bloque del cursor (re-indentado en su sitio) y `collectArrayFields` (campos de los arrays de objetos) |
 | application | `useCases/detectLanguage.ts` | Decide JSON o SQL para un texto nuevo (JSON válido gana; luego extensión `.sql`/`.json`; luego si empieza como SQL) |
 | application | `useCases/sqlText.ts` | SQL a una línea (respeta literales, `--` → `/* */`), escapar como literal `'…'` (`'` → `''`) y desescapar `'…'` / `"…"` |
-| application | `useCases/formatSql.ts` | Formatea SQL con `sql-formatter` (carga diferida): MAYÚSCULAS en palabras clave, funciones y tipos; dialecto y sangría |
+| application | `useCases/formatSql.ts` | Formatea SQL con `sql-formatter` (carga diferida): MAYÚSCULAS en palabras clave, funciones y tipos; dialecto y sangría. Si el dialecto falla, prueba el detectado y luego los demás; errores en español |
+| application | `useCases/detectSqlDialect.ts` | Adivina el dialecto por pistas (`@var`, `[col]`, `TOP`, `NOLOCK`, `FORMAT(` → SQL Server; `::`, `ILIKE` → PostgreSQL; `` ` `` → MySQL; `NVL`, `DUAL` → Oracle…) |
+| application | `useCases/sqlTableHints.ts` | Mantiene `WITH (NOLOCK, INDEX(ix))` de SQL Server pegado a su tabla al formatear |
 | application | `useCases/prepareDiff.ts` | Normaliza ambos lados antes de comparar (formato común + opciones de orden) |
 | presentation/editor | `cmExtensions.ts` | Extensiones de CodeMirror: numeración, plegado, atajos, pegar, `externalChange` |
 | | `cmTheme.ts` | Tema y colores de sintaxis con las variables CSS (claro/oscuro sin reconfigurar) |
@@ -54,7 +56,7 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 ## Funcionalidades
 - Validación en vivo con línea/columna del error, línea marcada en rojo y botón "Ir al error".
 - **Plegado de bloques** (⌄ / › en el margen; atajos Ctrl+Shift+[ y Ctrl+Shift+]).
-- **Modo SQL** (interruptor `JSON | SQL` en cada panel): colores de SQL y **Formatear** (botón o Shift+Alt+F) con palabras clave, funciones y tipos en MAYÚSCULAS, una cláusula por línea y la sangría del panel. Dialectos: estándar, PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, BigQuery (selector en la barra de estado; cambiarlo reformatea). Se activa solo al pegar SQL en un panel vacío (y lo formatea), al subir un `.sql` o con el botón "Parece SQL: cambiar a modo SQL" del aviso de error. Descarga como `consulta.sql`. Cada panel tiene su propio modo.
+- **Modo SQL** (interruptor `JSON | SQL` en cada panel): colores de SQL y **Formatear** (botón o Shift+Alt+F) con palabras clave, funciones y tipos en MAYÚSCULAS, una cláusula por línea y la sangría del panel. Dialectos: estándar, PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, BigQuery (selector en la barra de estado; cambiarlo reformatea). **El dialecto se detecta solo** mientras no se elija a mano (p. ej. `@variables` → SQL Server) y, si el elegido no entiende la consulta, se prueban los demás; la barra muestra "(detectado)". Se activa solo al pegar SQL en un panel vacío (y lo formatea), al subir un `.sql` o con el botón "Parece SQL: cambiar a modo SQL" del aviso de error. Descarga como `consulta.sql`. Cada panel tiene su propio modo.
   - En SQL también: **Minificar** (una línea; respeta textos e identificadores entre comillas, `--` pasa a `/* */`), **Escapar como texto SQL** (`'…'` con `'` → `''`, listo para `INSERT … VALUES ('…')`), **Desescapar** (`'…'` o `"…"`), buscar, copiar bloque, compartir.
   - Solo JSON (desactivados en SQL con tooltip "Solo disponible en modo JSON"): Árbol, Ordenar, Analizar JSON anidado.
   - **Comparar SQL**: con "Normalizar formato SQL" (activo por defecto) formatea ambas consultas antes del diff, así solo marca cambios reales; colores de SQL en el diff. Si un panel es JSON y el otro SQL, se compara el texto tal cual con un aviso neutro.
@@ -143,7 +145,7 @@ E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 81/81 ✔ · `npm run test:e2e`: 27/27 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
+- `npm test`: 92/92 ✔ · `npm run test:e2e`: 28/28 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

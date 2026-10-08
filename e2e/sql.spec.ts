@@ -21,6 +21,21 @@ test("pegar una consulta SQL activa el modo SQL y la formatea sola", async ({ pa
   await expect(pane.getByRole("alert")).toHaveCount(0);
 });
 
+test("una consulta de SQL Server (@variables, FORMAT, OVER) detecta el dialecto y se formatea sin error", async ({ page }) => {
+  const pane = leftPane(page);
+  const query =
+    "SELECT COUNT(*) OVER() AS dsd_total_rows, FORMAT(h.created_at, 'dd/MM/yyyy HH:mm:ss') created_at , h.document " +
+    "FROM header h WITH (NOLOCK) WHERE (@seller IS NULL OR h.seller_id = @seller) ORDER BY h.created_at DESC";
+  await page.evaluate((q) => navigator.clipboard.writeText(q), query);
+  await pane.locator(".cm-content").click();
+  await page.keyboard.press("ControlOrMeta+V");
+
+  await expect.poll(() => editorText(pane)).toContain("\nFROM\n  header h WITH (NOLOCK)\nWHERE\n");
+  await expect(pane.getByRole("alert")).toHaveCount(0);
+  await expect(pane.getByText("Dialecto: SQL Server (detectado)")).toBeVisible();
+  await expect(pane.getByRole("combobox", { name: "Dialecto SQL" })).toHaveValue("tsql");
+});
+
 test("si se escribe SQL en modo JSON, el aviso ofrece cambiar a SQL y Formatear lo ordena", async ({ page }) => {
   const pane = leftPane(page);
   await typeJson(pane, QUERY);

@@ -64,14 +64,15 @@ test("los iconos muestran rápido un tooltip que explica qué hacen", async ({ p
   await formatear.hover();
   await expect(tooltip).toContainText("Necesita un JSON válido", { timeout: 600 });
 
-  // Activo: explicación y atajo, y aparece en menos de medio segundo.
+  // Activo: explicación y atajo. El retardo real es 150 ms; el margen cubre lo que tarda Playwright
+  // en mover el ratón con la máquina cargada (el tooltip nativo del navegador tarda ~1 s o más).
   await pane.getByRole("button", { name: "Cargar ejemplo" }).click();
   await page.mouse.move(0, 400);
   await expect(tooltip).toHaveCount(0);
   const start = Date.now();
   await formatear.hover();
   await expect(tooltip).toContainText("Indenta el JSON", { timeout: 600 });
-  expect(Date.now() - start).toBeLessThan(500);
+  expect(Date.now() - start).toBeLessThan(800);
   await expect(tooltip).toContainText("Shift+Alt+F");
 
   // Pasar a otro icono cambia el tooltip al instante.

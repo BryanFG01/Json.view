@@ -30,6 +30,7 @@ describe("formatSqlUseCase", () => {
     const result = await formatSqlUseCase("select id, nombre from clientes where activo = 1 order by nombre", "sql", "2");
     expect(result).toEqual({
       ok: true,
+      dialect: "sql",
       text: "SELECT\n  id,\n  nombre\nFROM\n  clientes\nWHERE\n  activo = 1\nORDER BY\n  nombre",
     });
   });
@@ -51,8 +52,31 @@ describe("formatSqlUseCase", () => {
     expect(result.ok && result.text).toBe("SELECT\n  COUNT(id),\n  CAST(x AS VARCHAR(10))\nFROM\n  t");
   });
 
-  it("devuelve el error en vez de lanzar si no puede formatear", async () => {
+  it("devuelve el error en español, sin la sugerencia en inglés, si ningún dialecto puede formatear", async () => {
     const result = await formatSqlUseCase("select 'sin cerrar", "sql", "2");
     expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).not.toMatch(/This likely happens|Parse error/);
+      expect(result.message).toMatch(/línea 1, columna/);
+    }
+  });
+
+  it("si el dialecto elegido no entiende la consulta, prueba otros y dice cuál funcionó", async () => {
+    // Consulta de SQL Server (variables @, FORMAT, OVER, NOLOCK): el SQL estándar falla con "@seller".
+    const query =
+      "SELECT COUNT(*) OVER() AS total, FORMAT(h.created_at, 'dd/MM/yyyy HH:mm:ss') created_at FROM header h WITH (NOLOCK) " +
+      "WHERE (@seller IS NULL OR h.seller_id = @seller) ORDER BY h.created_at DESC OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY";
+    const result = await formatSqlUseCase(query, "sql", "2");
+    expect(result).toMatchObject({ ok: true, dialect: "tsql" });
+    expect(result.ok && result.text).toContain("@seller IS NULL");
+    // WITH (NOLOCK) queda pegado a su tabla, no como una cláusula aparte.
+    expect(result.ok && result.text).toContain("\nFROM\n  header h WITH (NOLOCK)\nWHERE");
+  });
+
+  it("une también varias pistas de tabla y no toca un WITH de CTE", async () => {
+    const hints = await formatSqlUseCase("select a from t with (nolock, index(ix_Fecha)) join u with ( updlock ,rowlock ) on u.id = t.id", "tsql", "2");
+    expect(hints.ok && hints.text).toBe("SELECT\n  a\nFROM\n  t WITH (NOLOCK, INDEX(ix_Fecha))\n  JOIN u WITH (UPDLOCK, ROWLOCK) ON u.id = t.id");
+    const cte = await formatSqlUseCase("with x as (select 1 as a) select a from x", "tsql", "2");
+    expect(cte.ok && cte.text).toMatch(/^WITH\n {2}x AS \(/);
   });
 });

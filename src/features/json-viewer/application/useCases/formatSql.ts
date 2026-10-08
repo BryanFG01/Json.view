@@ -1,25 +1,46 @@
 import type { IndentOption, SqlDialect } from "../../domain/models/json";
+import { dialectCandidates } from "./detectSqlDialect";
+import { protectTableHints, restoreTableHints } from "./sqlTableHints";
 
-export type SqlFormatResult = { ok: true; text: string } | { ok: false; message: string };
+export type SqlFormatResult =
+  | { ok: true; text: string; dialect: SqlDialect }
+  | { ok: false; message: string };
+
+/** El mensaje de sql-formatter añade una sugerencia en inglés; se deja solo la parte útil. */
+function cleanMessage(message: string): string {
+  return message
+    .split("\n")[0]
+    .replace(/\s*This likely happens.*$/i, "")
+    .replace(/^Parse error:\s*/i, "")
+    .replace(/^Unexpected /i, "Texto inesperado ")
+    .replace(/ at line (\d+) column (\d+)/i, " en la línea $1, columna $2");
+}
 
 /**
- * Formatea SQL con `sql-formatter`. La librería se importa al usarla por primera vez:
- * quien solo trabaja con JSON no la descarga.
+ * Formatea SQL con `sql-formatter` (importado al usarse: quien solo trabaja con JSON no lo
+ * descarga). Si el dialecto elegido no entiende la consulta, prueba el detectado y luego los
+ * demás; devuelve el dialecto con el que funcionó.
  */
 export async function formatSqlUseCase(text: string, dialect: SqlDialect, indent: IndentOption): Promise<SqlFormatResult> {
   const { format } = await import("sql-formatter");
-  try {
-    const formatted = format(text, {
-      language: dialect,
-      keywordCase: "upper",
-      functionCase: "upper",
-      dataTypeCase: "upper",
-      tabWidth: indent === "4" ? 4 : 2,
-      useTabs: indent === "tab",
-      linesBetweenQueries: 1,
-    });
-    return { ok: true, text: formatted };
-  } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  // `WITH (NOLOCK)` de SQL Server: se protege para que quede pegado a su tabla.
+  const { text: source, hints } = protectTableHints(text);
+  let firstError = "";
+  for (const candidate of dialectCandidates(dialect, text)) {
+    try {
+      const formatted = format(source, {
+        language: candidate,
+        keywordCase: "upper",
+        functionCase: "upper",
+        dataTypeCase: "upper",
+        tabWidth: indent === "4" ? 4 : 2,
+        useTabs: indent === "tab",
+        linesBetweenQueries: 1,
+      });
+      return { ok: true, text: restoreTableHints(formatted, hints), dialect: candidate };
+    } catch (error) {
+      firstError ||= cleanMessage(error instanceof Error ? error.message : String(error));
+    }
   }
+  return { ok: false, message: firstError };
 }

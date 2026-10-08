@@ -53,8 +53,12 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
   const deferredText = useDeferredValue(text);
   const parsed = useMemo(() => (isSql ? NOT_JSON : parseJsonUseCase(deferredText)), [isSql, deferredText]);
   const status = useMemo(
-    () => (isSql ? buildSqlStatus(deferredText, dialectLabel(sql.dialect)) : buildStatus(deferredText, parsed)),
-    [isSql, deferredText, parsed, sql.dialect],
+    () => {
+      if (!isSql) return buildStatus(deferredText, parsed);
+      const label = `${dialectLabel(sql.dialect)}${sql.dialectDetected ? " (detectado)" : ""}`;
+      return buildSqlStatus(deferredText, label);
+    },
+    [isSql, deferredText, parsed, sql.dialect, sql.dialectDetected],
   );
   const current = useCallback(() => (deferredText === text ? parsed : parseJsonUseCase(text)), [deferredText, text, parsed]);
   const actions = createJsonActions({ parsed, current, indent, replace });
@@ -137,7 +141,7 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
       autoFocus,
       language: sql.language,
       dialect: sql.dialect,
-      error: isSql ? (sql.sqlError ? { message: `No se pudo formatear el SQL: ${sql.sqlError}`, location: null } : null) : jsonError,
+      error: isSql ? (sql.sqlError ? { message: `No se pudo formatear el SQL con ningún dialecto. ${sql.sqlError}`, location: null } : null) : jsonError,
       errorAction: suggestSql ? { label: "Parece SQL: cambiar a modo SQL", onClick: () => switchLanguage("sql") } : null,
       onChange: history.type,
       onPasteIntoEmpty: pasteIntoEmpty,
