@@ -14,7 +14,14 @@ export const TIPS = {
   },
   dialect: { title: "Dialecto SQL", desc: "Ajusta el formateo a la sintaxis de tu base de datos (comillas, LIMIT/TOP, etc.)." },
   sample: { title: "Cargar ejemplo", desc: "Carga un JSON de ejemplo para probar las herramientas." },
-  upload: { title: "Subir archivo", desc: "Abre un .json o .txt de tu equipo. También puedes arrastrarlo al editor." },
+  upload: {
+    title: "Subir archivo",
+    desc: "Abre un .json, un script .sql (SSMS en UTF-16, mysqldump, pg_dump), un .txt, una base SQLite (.db de Flutter/Android, .sqlite; con su .db-wal) o un .zip que los contenga. También puedes arrastrarlo al editor.",
+  },
+  dbTable: { title: "Tabla o vista", desc: "Muestra sus filas como JSON en el panel (las primeras 1.000; para más, escribe tu consulta)." },
+  dbRun: { title: "Ejecutar consulta", desc: "Ejecuta el SQL sobre la base y muestra el resultado como JSON. El archivo original no se modifica.", keys: "Ctrl+Enter" },
+  dbSchema: { title: "Ver esquema", desc: "Muestra las sentencias CREATE de tablas, vistas, índices y triggers, formateadas." },
+  dbClose: { title: "Cerrar base", desc: "Cierra la base SQLite. El contenido del panel se queda como está." },
   download: { title: "Descargar", desc: "Guarda el contenido del panel como data.json.", disabledHint: NEEDS_TEXT },
   copy: { title: "Copiar", desc: "Copia todo el contenido del panel.", disabledHint: NEEDS_TEXT },
   share: {

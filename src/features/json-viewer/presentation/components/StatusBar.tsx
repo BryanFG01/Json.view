@@ -1,4 +1,4 @@
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Loader2 } from "lucide-react";
 import type { IndentOption, SqlDialect } from "../../domain/models/json";
 import { SQL_DIALECTS } from "../utils/sqlOptions.constants";
 import type { JsonDocumentVM } from "../hooks/useJsonDocument";
@@ -14,7 +14,15 @@ export function StatusBar({ vm }: { vm: JsonDocumentVM["status"] }) {
         <span className="size-2 rounded-full bg-current" aria-hidden />
         {vm.label}
       </span>
-      {vm.scopeLabel ? (
+      {vm.formatting && (
+        <span role="status" className="flex shrink-0 items-center gap-1.5 text-accent">
+          <Loader2 className="size-3.5 animate-spin" /> Formateando SQL…
+          <button type="button" onClick={vm.cancelFormatting} className="rounded px-1.5 py-0.5 font-semibold text-fg hover:bg-hover">
+            Cancelar
+          </button>
+        </span>
+      )}
+      {vm.formatting ? null : vm.scopeLabel ? (
         <span className="flex min-w-0 items-center gap-1.5">
           <span className="truncate text-accent" {...tipAttrs(TIPS.scope)}>{vm.scopeLabel}</span>
           <button

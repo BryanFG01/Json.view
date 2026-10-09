@@ -2,6 +2,9 @@ import type { IndentOption, SqlDialect } from "../../domain/models/json";
 import { dialectCandidates } from "./detectSqlDialect";
 import { protectTableHints, restoreTableHints } from "./sqlTableHints";
 
+/** A partir de aquí (≈1 MB, unos 4 s de formateo) se considera un script grande. */
+export const LARGE_SQL = 1_000_000;
+
 export type SqlFormatResult =
   | { ok: true; text: string; dialect: SqlDialect }
   | { ok: false; message: string };
@@ -26,7 +29,9 @@ export async function formatSqlUseCase(text: string, dialect: SqlDialect, indent
   // `WITH (NOLOCK)` de SQL Server: se protege para que quede pegado a su tabla.
   const { text: source, hints } = protectTableHints(text);
   let firstError = "";
-  for (const candidate of dialectCandidates(dialect, text)) {
+  // Con scripts grandes, probar 8 dialectos podría tardar minutos: solo el elegido y el detectado.
+  const candidates = dialectCandidates(dialect, text).slice(0, text.length > LARGE_SQL ? 2 : undefined);
+  for (const candidate of candidates) {
     try {
       const formatted = format(source, {
         language: candidate,

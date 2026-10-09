@@ -2,28 +2,41 @@
 
 import { useCallback, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import type { DocLanguage } from "../../domain/models/json";
+import type { FileEntry } from "../../application/useCases/zipFile";
 import { downloadText } from "../utils/fileIO";
 
 interface FileTransferParams {
   text: string;
   language: DocLanguage;
-  /** Recibe también el nombre del archivo (la extensión .sql/.json ayuda a elegir el modo). */
-  onLoad: (text: string, fileName: string) => void;
+  /**
+   * Recibe los archivos como bytes (no como texto): pueden ser una base SQLite, un .zip o texto
+   * en UTF-16 / ANSI. Varios a la vez para subir juntos un .db y su .db-wal.
+   */
+  onFiles: (files: FileEntry[]) => void;
 }
 
-/** Subir (selector o arrastrar y soltar) y descargar archivos. Todo local, con FileReader/Blob. */
-export function useFileTransfer({ text, language, onLoad }: FileTransferParams) {
+async function readAll(list: FileList | null | undefined): Promise<FileEntry[]> {
+  const files = Array.from(list ?? []);
+  return Promise.all(files.map(async (file) => ({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })));
+}
+
+/** Subir (selector o arrastrar y soltar) y descargar archivos. Todo local, en el navegador. */
+export function useFileTransfer({ text, language, onFiles }: FileTransferParams) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setDragging] = useState(false);
 
-  const readFile = useCallback((file: File | undefined) => {
-    file?.text().then((content) => onLoad(content, file.name)).catch(() => undefined);
-  }, [onLoad]);
+  const receive = useCallback((list: FileList | null | undefined) => {
+    readAll(list)
+      .then((files) => {
+        if (files.length > 0) onFiles(files);
+      })
+      .catch(() => undefined);
+  }, [onFiles]);
 
   const onFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    readFile(event.target.files?.[0]);
+    receive(event.target.files);
     event.target.value = "";
-  }, [readFile]);
+  }, [receive]);
 
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
@@ -33,8 +46,8 @@ export function useFileTransfer({ text, language, onLoad }: FileTransferParams) 
   const onDrop = useCallback((event: DragEvent) => {
     event.preventDefault();
     setDragging(false);
-    readFile(event.dataTransfer.files[0]);
-  }, [readFile]);
+    receive(event.dataTransfer.files);
+  }, [receive]);
 
   return {
     inputRef,

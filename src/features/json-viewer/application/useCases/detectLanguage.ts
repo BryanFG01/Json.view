@@ -24,7 +24,7 @@ function isJson(text: string): boolean {
  */
 export function detectLanguage(text: string, fileName?: string): DocLanguage {
   if (isJson(text)) return "json";
-  if (fileName && /\.sql$/i.test(fileName)) return "sql";
+  if (fileName && /\.(sql|ddl|dml|pgsql|psql)$/i.test(fileName)) return "sql";
   if (fileName && /\.json$/i.test(fileName)) return "json";
   return looksLikeSql(text) ? "sql" : "json";
 }

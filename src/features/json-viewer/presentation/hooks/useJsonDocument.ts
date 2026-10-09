@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
-import type { DocLanguage, IndentOption, JsonParseResult, SortOptions, SortTarget, ViewMode } from "../../domain/models/json";
+import type { DocLanguage, IndentOption, JsonParseResult, JsonValue, SortOptions, SortTarget, ViewMode } from "../../domain/models/json";
 import { detectLanguage, looksLikeSql } from "../../application/useCases/detectLanguage";
 import { collectArrayFields, sortBlockUseCase } from "../../application/useCases/sortBlock";
 import { parseJsonUseCase } from "../../application/useCases/parseJson";
-import { formatIfValidUseCase } from "../../application/useCases/transformJson";
+import { formatIfValidUseCase, formatJsonUseCase } from "../../application/useCases/transformJson";
 import type { BracketScope } from "../editor/cmBracketScope";
 import { createJsonActions } from "../utils/jsonActions";
 import { SAMPLE_JSON } from "../utils/sampleJson";
@@ -22,6 +22,9 @@ interface JsonDocumentOptions {
   shareable?: boolean;
   autoFocus?: boolean;
 }
+
+/** Hasta este tamaño (~2 s de formateo) el SQL pegado se formatea solo. */
+const AUTO_FORMAT_SQL_LIMIT = 500_000;
 
 /** En modo SQL no se valida como JSON: las acciones de JSON quedan desactivadas. */
 const NOT_JSON: JsonParseResult = { status: "empty" };
@@ -72,12 +75,27 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
   }, [switchLanguage, replace]);
   const share = useShareLink({ text, onLoad: loadText, enabled: shareable });
 
-  /** Pegar en el editor vacío: JSON válido o SQL se formatean automáticamente. */
+  /** Resultado de una base SQLite (tabla o consulta) → JSON formateado en el panel. */
+  const showJson = useCallback((value: JsonValue) => {
+    switchLanguage("json");
+    replace(formatJsonUseCase(value, indent));
+  }, [switchLanguage, replace, indent]);
+  /** Esquema de una base SQLite → SQL formateado (dialecto SQLite). */
+  const showSql = useCallback((source: string) => {
+    switchLanguage("sql");
+    void formatSql({ source, dialect: "sqlite", keepOnError: true });
+  }, [switchLanguage, formatSql]);
+
+  /**
+   * Pegar en el editor vacío: JSON válido o SQL se formatean automáticamente. Un script SQL
+   * grande se pega tal cual (formatearlo tarda segundos): se formatea con el botón si se quiere.
+   */
   const pasteIntoEmpty = useCallback((pasted: string) => {
     const language = detectLanguage(pasted);
     switchLanguage(language);
-    if (language === "sql") void formatSql({ source: pasted, keepOnError: true });
-    else replace(formatIfValidUseCase(pasted, indent));
+    if (language !== "sql") replace(formatIfValidUseCase(pasted, indent));
+    else if (pasted.length > AUTO_FORMAT_SQL_LIMIT) replace(pasted);
+    else void formatSql({ source: pasted, keepOnError: true });
   }, [switchLanguage, formatSql, replace, indent]);
 
   const format = () => (isSql ? void formatSql() : actions.format());
@@ -108,6 +126,8 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
     dialect: sql.dialect,
     replace,
     loadText,
+    showJson,
+    showSql,
     openSearch,
     toolbar: {
       openSearch,
@@ -124,7 +144,7 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
       isSql,
       tips: toolbarTips(isSql),
       setLanguage: switchLanguage,
-      canFormat: isSql ? text.trim().length > 0 : actions.isValid,
+      canFormat: isSql ? text.trim().length > 0 && !sql.formatting : actions.isValid,
       canShare: shareable,
       mode,
       setMode,
@@ -164,6 +184,8 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
       isSql,
       dialect: sql.dialect,
       onDialectChange: sql.setDialect,
+      formatting: sql.formatting,
+      cancelFormatting: sql.cancelFormatting,
     },
   };
 }

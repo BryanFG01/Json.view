@@ -20,6 +20,13 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | application | `useCases/sortBlock.ts` | Ordenar solo el bloque del cursor (re-indentado en su sitio) y `collectArrayFields` (campos de los arrays de objetos) |
 | application | `useCases/detectLanguage.ts` | Decide JSON o SQL para un texto nuevo (JSON válido gana; luego extensión `.sql`/`.json`; luego si empieza como SQL) |
 | application | `useCases/sqlText.ts` | SQL a una línea sin ningún salto (también dentro de `'…'`; respeta los espacios de los literales y los cuerpos `$$…$$`; `--` → `/* */`), escapar como literal `'…'` (`'` → `''`) y desescapar `'…'` / `"…"` |
+| domain | `models/sqlite.ts` | Tipos de la base SQLite y puerto `ISqliteDatabase` (info, query, schema, close) |
+| infrastructure | `sqlite/sqlJsDatabase.ts` | Adaptador del puerto con sql.js (WebAssembly, carga diferida desde `/sqljs`); enteros grandes con `useBigInt` |
+| application | `useCases/sqliteFile.ts` | Firma SQLite, modo WAL y **checkpoint manual del `-wal`** (verifica checksums; solo transacciones confirmadas) |
+| application | `useCases/zipFile.ts` | Lee `.zip` en el navegador (stored / deflate con `DecompressionStream`), sin dependencias |
+| application | `useCases/classifyUpload.ts` | Decide qué abrir: base SQLite (+ `-wal`), texto (JSON/SQL/txt), dentro o fuera de un `.zip`, o aviso si es otro binario |
+| application | `useCases/sqliteCells.ts` | Celdas → JSON: BLOB `{ blob: base64, bytes }`, enteros > 2^53 como texto exacto |
+| application | `useCases/decodeText.ts` | Lee archivos con la codificación correcta: BOM UTF-8/UTF-16 (SSMS), UTF-16 sin BOM, UTF-8 y ANSI (Windows-1252) |
 | application | `useCases/joinLines.ts` | Une cualquier texto en una línea (sin saltos, sangrías ni líneas vacías): Minificar cuando no es JSON válido |
 | application | `useCases/formatSql.ts` | Formatea SQL con `sql-formatter` (carga diferida): MAYÚSCULAS en palabras clave, funciones y tipos; dialecto y sangría. Si el dialecto falla, prueba el detectado y luego los demás; errores en español |
 | application | `useCases/detectSqlDialect.ts` | Adivina el dialecto por pistas (`@var`, `[col]`, `TOP`, `NOLOCK`, `FORMAT(` → SQL Server; `::`, `ILIKE` → PostgreSQL; `` ` `` → MySQL; `NVL`, `DUAL` → Oracle…) |
@@ -34,6 +41,8 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | presentation/hooks | `useJsonViewer` | Hook de página: documento izquierdo/derecho, dividir pantalla, comparar, tema |
 | | `useJsonDocument` | Estado de un panel (historial, parseo, vista, sangría, acciones) |
 | | `useJsonEditor` → `useCodeMirror` | Monta CodeMirror como vista controlada por React; ir al error |
+| presentation/workers | `sqlFormat.worker.ts` + `utils/backgroundSqlFormatter.ts` | Formateo SQL en un Web Worker (uno por panel), cancelable: la página no se congela con scripts grandes |
+| | `useSqliteSource` | Subidas del panel y base SQLite abierta: tablas, consulta (Ctrl+Enter), esquema; resultados como JSON en el editor. Es el punto de composición que instancia el adaptador de infraestructura (no hay Server Actions: todo es local) |
 | | `useSqlNormalized` | Formatea en segundo plano las dos consultas al comparar SQL |
 | | `useSqlMode` | Modo JSON/SQL del panel, dialecto y formateo SQL (el error se descarta solo al editar) |
 | | `useFindShortcut` | Ctrl+F abre el buscador del panel activo (foco o último clic), no el del navegador |
@@ -78,7 +87,9 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
   - Se puede deshacer.
 - Comparar: diferencias lado a lado (rojo = quitado, verde = agregado, rayado = sin línea), contador +/−, selector de orden de claves (original / A→Z / Z→A) y "Ordenar arrays" (solo afecta a la vista, no a los textos), Esc para salir.
 - Vista en árbol con `<details>/<summary>` (colapsar sin JS extra) y colores por tipo.
-- Subir archivo, arrastrar y soltar, descargar, copiar.
+- Subir archivo, arrastrar y soltar, descargar, copiar. Acepta `.json`, `.txt` y **scripts SQL** (`.sql`, `.ddl`, `.dml`, `.pgsql`, `.psql`: SSMS "Generar scripts", mysqldump, pg_dump). Lee bien **UTF-16** (lo que guarda SSMS por defecto), UTF-8 y ANSI (tildes y ñ correctas).
+- **Bases SQLite** (`.db` de Flutter/sqflite, Drift, Android; `.sqlite`, `.sqlite3`, `.db3`), sueltas o dentro de un **`.zip`**, con su **`.db-wal`** (se suben juntos o en el zip): barra con nombre · tablas · vistas · versión (`user_version`) · tamaño; selector de tablas con nº de filas (muestra las primeras 1.000 como JSON); consulta propia con Ctrl+Enter (hasta 10.000 filas); "Esquema" (CREATE formateados). Los resultados quedan como JSON en el panel: Árbol, Ordenar, Buscar y **Comparar dos bases** (una por panel) funcionan. Avisos: base WAL sin su `-wal` ("pueden faltar los últimos cambios"), `-wal` suelto, binario no soportado (cifrada/SQLCipher, `.bak`/`.mdf`). El archivo original nunca se modifica y nada sale del navegador. No soporta: SQLCipher, Hive, Isar.
+- **Scripts SQL grandes**: el formateo corre en segundo plano (≈4 s por MB) con "Formateando SQL… Cancelar" en la barra de estado y la página sigue respondiendo; si se edita mientras tanto, no se pisa el texto. Por encima de ~500 KB, al pegar no se formatea solo (botón Formatear); por encima de ~1 MB solo se prueban el dialecto elegido y el detectado.
 - Compartir: el JSON va comprimido (deflate) en el `#hash`, que el navegador no envía al servidor.
 - Deshacer/rehacer (Ctrl+Z / Ctrl+Y), Tab indenta, Shift+Alt+F formatea.
 - Privacidad: todo corre en el navegador; no hay backend ni Server Actions.
@@ -133,6 +144,7 @@ Decisiones tomadas: CodeMirror 6 antes de la tarea 1 · árbol híbrido (`<detai
 - Sin backend: no aplican `infrastructure/`, `domain/ports/` ni `runAction`. Si se agrega persistencia (p. ej. historial en servidor), seguir el patrón puerto → repositorio → action.
 - `highlight.ts` ya solo colorea la vista Comparar; se desactiva por encima de 200 000 caracteres (`HIGHLIGHT_MAX_CHARS`). El editor usa el parser de CodeMirror.
 - Dependencias de CodeMirror (~75 KB gzip): `@codemirror/{state,view,language,lang-json,commands}`, `@lezer/highlight`, `@codemirror/autocomplete` (solo `closeBrackets`, el autocierre) y `@codemirror/search` (motor de búsqueda; la barra es propia), `@codemirror/lang-sql` (colores de SQL).
+- `sql.js` (39 KB JS + 643 KB WebAssembly en `public/sqljs`, copiado por `postinstall` con `scripts/copy-sqljs-wasm.mjs`) se carga **solo al abrir una base SQLite** (verificado). `@types/node` ≥ 22 para `node:sqlite` en los fixtures de test (`test/fixtures.ts`).
 - `sql-formatter` (~286 KB sin comprimir) se carga **solo al formatear SQL** (import dinámico, chunk aparte; verificado que la página inicial no lo incluye).
 
 ## Tests
@@ -147,7 +159,7 @@ E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 94/94 ✔ · `npm run test:e2e`: 29/29 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
+- `npm test`: 105/105 ✔ · `npm run test:e2e`: 34/34 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

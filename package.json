@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:perf": "playwright test --config playwright.perf.config.ts"
+    "test:perf": "playwright test --config playwright.perf.config.ts",
+    "postinstall": "node scripts/copy-sqljs-wasm.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
@@ -26,14 +27,16 @@
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "sql-formatter": "^15.9.0"
+    "sql-formatter": "^15.9.0",
+    "sql.js": "^1.14.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sql.js": "^1.4.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "fast-check": "^4.10.2",
