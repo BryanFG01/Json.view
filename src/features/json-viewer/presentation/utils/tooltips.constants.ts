@@ -38,7 +38,11 @@ export const TIPS = {
     desc: "Ordena claves (A→Z, Z→A), valores de arrays (1, 2, 10…) o arrays de objetos por un campo, en todos los niveles. Puede aplicarse solo al bloque del cursor.",
     disabledHint: NEEDS_VALID,
   },
-  minify: { title: "Minificar", desc: "Quita espacios y saltos de línea: todo el JSON en una sola línea.", disabledHint: NEEDS_VALID },
+  minify: {
+    title: "Minificar",
+    desc: "Todo en una sola línea, sin saltos. Si no es JSON válido (texto suelto, JSON a medias), une igualmente sus líneas.",
+    disabledHint: NEEDS_TEXT,
+  },
   escape: {
     title: "Escapar como string",
     desc: "Convierte el JSON en un texto con comillas escapadas, para pegarlo dentro de otro JSON o en código.",

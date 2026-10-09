@@ -81,6 +81,24 @@ test("en SQL: minificar a una línea, escapar como texto '…' para un INSERT y 
   await expect.poll(() => editorText(pane)).toBe("SELECT nombre FROM clientes WHERE apodo = 'O''Brien'");
 });
 
+test("Minificar deja todo en una línea: SQL con saltos dentro de textos y texto que no es JSON válido", async ({ page }) => {
+  await page.getByRole("button", { name: "Dividir pantalla" }).click();
+
+  // SQL: el salto dentro de '…' también se quita; el comentario -- pasa a /* */.
+  const sql = rightPane(page);
+  await sql.getByRole("button", { name: "Modo SQL" }).click();
+  await typeJson(sql, "SELECT id -- clave\nFROM t\nWHERE nota = 'linea 1\n   linea 2'");
+  await sql.getByRole("button", { name: "Minificar" }).click();
+  await expect.poll(() => editorText(sql)).toBe("SELECT id /* clave */ FROM t WHERE nota = 'linea 1 linea 2'");
+
+  // JSON no válido (o texto suelto): Minificar se activa y une las líneas.
+  const json = leftPane(page);
+  await typeJson(json, '{\n  "a": 1,\n\n    "b": [1,\n 2]');
+  await expect(json.getByText("JSON inválido")).toBeVisible();
+  await json.getByRole("button", { name: "Minificar" }).click();
+  await expect.poll(() => editorText(json)).toBe('{ "a": 1, "b": [1, 2]');
+});
+
 test("comparar dos consultas SQL normaliza el formato y solo marca cambios reales", async ({ page }) => {
   await page.getByRole("button", { name: "Dividir pantalla" }).click();
   for (const [pane, query] of [

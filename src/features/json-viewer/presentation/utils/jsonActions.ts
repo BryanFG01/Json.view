@@ -1,5 +1,6 @@
 import type { IndentOption, JsonParseResult, JsonValue, SortOptions } from "../../domain/models/json";
 import { expandNestedJsonUseCase } from "../../application/useCases/expandNestedJson";
+import { joinLinesUseCase } from "../../application/useCases/joinLines";
 import { sortJsonUseCase } from "../../application/useCases/sortJson";
 import {
   escapeJsonUseCase,
@@ -13,12 +14,14 @@ interface JsonActionsParams {
   parsed: JsonParseResult;
   /** Resultado del texto actual: las acciones nunca operan sobre una versión vieja. */
   current: () => JsonParseResult;
+  /** Texto actual del panel (para unir líneas cuando no es JSON válido). */
+  text: string;
   indent: IndentOption;
   replace: (text: string) => void;
 }
 
 /** Acciones de transformación sobre el JSON actual. Solo actúan si el JSON es válido. */
-export function createJsonActions({ parsed, current, indent, replace }: JsonActionsParams) {
+export function createJsonActions({ parsed, current, text, indent, replace }: JsonActionsParams) {
   const value = parsed.status === "valid" ? parsed.value : undefined;
 
   const apply = (transform: (value: JsonValue) => string | null) => {
@@ -35,7 +38,8 @@ export function createJsonActions({ parsed, current, indent, replace }: JsonActi
     formatWith: (nextIndent: IndentOption) => apply((v) => formatJsonUseCase(v, nextIndent)),
     expandNested: () => apply((v) => expandNestedJsonUseCase(v, indent)),
     sort: (options: SortOptions) => apply((v) => sortJsonUseCase(v, options, indent)),
-    minify: () => apply(minifyJsonUseCase),
+    /** JSON válido: minifica. Si no es JSON válido, une igualmente sus líneas en una sola. */
+    minify: () => (current().status === "valid" ? apply(minifyJsonUseCase) : replace(joinLinesUseCase(text))),
     escape: () => apply(escapeJsonUseCase),
     unescape: () => apply((v) => unescapeJsonUseCase(v, indent)),
   };

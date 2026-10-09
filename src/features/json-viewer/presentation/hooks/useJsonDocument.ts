@@ -61,7 +61,7 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
     [isSql, deferredText, parsed, sql.dialect, sql.dialectDetected],
   );
   const current = useCallback(() => (deferredText === text ? parsed : parseJsonUseCase(text)), [deferredText, text, parsed]);
-  const actions = createJsonActions({ parsed, current, indent, replace });
+  const actions = createJsonActions({ parsed, current, text, indent, replace });
   const clipboard = useClipboard();
   const blockClipboard = useClipboard();
 
@@ -116,7 +116,9 @@ export function useJsonDocument({ shareable = false, autoFocus = false }: JsonDo
       ...(isSql ? sql.actions : {}),
       ...share,
       format,
-      canTransform: isSql ? text.trim().length > 0 : actions.isValid,
+      // Minificar / una sola línea: con cualquier texto (en JSON y en SQL). Escapar: SQL con texto o JSON válido.
+      canMinify: text.trim().length > 0,
+      canEscape: isSql ? text.trim().length > 0 : actions.isValid,
       sort,
       sortContext: { blockLabel: scope ? `Líneas ${scope.openLine}–${scope.closeLine}` : null, getArrayFields },
       isSql,

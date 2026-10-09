@@ -17,7 +17,7 @@ const SQL_TIPS = {
   minify: {
     ...TIPS.minify,
     title: "Minificar",
-    desc: "Deja la consulta en una sola línea. Respeta los textos entre comillas; los comentarios -- pasan a /* */.",
+    desc: "Deja la consulta en una sola línea, sin ningún salto (también dentro de los textos '…'). Los comentarios -- pasan a /* */; los cuerpos $$…$$ no se tocan.",
     disabledHint: "Escribe o pega una consulta.",
   },
   escape: {

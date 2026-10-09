@@ -19,7 +19,8 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | application | `useCases/sortJson.ts` | Ordena claves (A→Z / Z→A) y arrays en orden natural (`item2` < `item10`, números por valor); serializa directo para respetar el orden aun con claves numéricas |
 | application | `useCases/sortBlock.ts` | Ordenar solo el bloque del cursor (re-indentado en su sitio) y `collectArrayFields` (campos de los arrays de objetos) |
 | application | `useCases/detectLanguage.ts` | Decide JSON o SQL para un texto nuevo (JSON válido gana; luego extensión `.sql`/`.json`; luego si empieza como SQL) |
-| application | `useCases/sqlText.ts` | SQL a una línea (respeta literales, `--` → `/* */`), escapar como literal `'…'` (`'` → `''`) y desescapar `'…'` / `"…"` |
+| application | `useCases/sqlText.ts` | SQL a una línea sin ningún salto (también dentro de `'…'`; respeta los espacios de los literales y los cuerpos `$$…$$`; `--` → `/* */`), escapar como literal `'…'` (`'` → `''`) y desescapar `'…'` / `"…"` |
+| application | `useCases/joinLines.ts` | Une cualquier texto en una línea (sin saltos, sangrías ni líneas vacías): Minificar cuando no es JSON válido |
 | application | `useCases/formatSql.ts` | Formatea SQL con `sql-formatter` (carga diferida): MAYÚSCULAS en palabras clave, funciones y tipos; dialecto y sangría. Si el dialecto falla, prueba el detectado y luego los demás; errores en español |
 | application | `useCases/detectSqlDialect.ts` | Adivina el dialecto por pistas (`@var`, `[col]`, `TOP`, `NOLOCK`, `FORMAT(` → SQL Server; `::`, `ILIKE` → PostgreSQL; `` ` `` → MySQL; `NVL`, `DUAL` → Oracle…) |
 | application | `useCases/sqlTableHints.ts` | Mantiene `WITH (NOLOCK, INDEX(ix))` de SQL Server pegado a su tabla al formatear |
@@ -66,6 +67,7 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 - **Tooltips**: al pasar el ratón (o con foco de teclado) cada icono explica qué hace, con su atajo, y si está desactivado dice por qué. Aparecen en ~150 ms (al instante si ya hay uno abierto), se recolocan para no salirse de la pantalla y no se muestran en pantallas táctiles. Sustituyen al `title` nativo (lento y genérico).
 - **Copiar un nodo**: en el editor, botón "Copiar bloque" en la barra de estado (copia solo el `{ }` / `[ ]` del cursor, re-formateado con la sangría del panel). En el Árbol, botón de copiar en cada fila (al pasar el ratón; siempre visible en pantallas táctiles): objetos/arrays como JSON formateado, textos sin comillas, grupos `[100 … 199]` solo con su rango.
 - Formatear (2, 4 espacios o Tab), minificar, escapar/desescapar string JSON.
+- **Minificar = una sola línea, sin ningún salto** (JSON y SQL): con JSON válido, `JSON.stringify`; si el texto no es JSON válido (texto suelto, JSON a medias), une sus líneas (sin sangría ni líneas vacías); en SQL, también quita los saltos dentro de los textos `'…'`.
 - Analizar JSON anidado y formatear (botón de capas): convierte strings con JSON adentro en objetos.
 - Pegar en un editor vacío formatea automáticamente si es JSON válido.
 - Dividir pantalla: dos paneles independientes (cada uno con su historial, vista y archivos).
@@ -145,7 +147,7 @@ E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 92/92 ✔ · `npm run test:e2e`: 28/28 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
+- `npm test`: 94/94 ✔ · `npm run test:e2e`: 29/29 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatSqlUseCase } from "./formatSql";
+import { joinLinesUseCase } from "./joinLines";
 import { fromSqlLiteralUseCase, minifySqlUseCase, toSqlLiteralUseCase } from "./sqlText";
 
 describe("minifySqlUseCase", () => {
@@ -11,9 +12,15 @@ describe("minifySqlUseCase", () => {
     );
   });
 
-  it("no toca espacios ni saltos dentro de textos, identificadores ni $$…$$", () => {
-    const sql = "SELECT  'a   b\n c',  \"Mi   Columna\",  [otra  col],\n  $$ cuerpo   libre $$\nFROM   t";
-    expect(minifySqlUseCase(sql)).toBe("SELECT 'a   b\n c', \"Mi   Columna\", [otra  col], $$ cuerpo   libre $$ FROM t");
+  it("no toca los espacios dentro de textos e identificadores, pero sí une sus saltos de línea", () => {
+    const sql = "SELECT  'a   b\n   c',  \"Mi   Columna\",  [otra  col]\nFROM   t /* nota\n  larga */";
+    const out = minifySqlUseCase(sql);
+    expect(out).toBe("SELECT 'a   b c', \"Mi   Columna\", [otra  col] FROM t /* nota larga */");
+    expect(out).not.toContain("\n");
+  });
+
+  it("deja intactos los cuerpos $$…$$ (código de funciones)", () => {
+    expect(minifySqlUseCase("SELECT $$ linea 1\n  -- comentario\n linea 2 $$\nFROM t")).toBe("SELECT $$ linea 1\n  -- comentario\n linea 2 $$ FROM t");
   });
 
   it("respeta comillas duplicadas y escapadas", () => {
@@ -26,6 +33,13 @@ describe("minifySqlUseCase", () => {
 
   it("separa sentencias y no deja espacios junto a paréntesis, comas ni ;", () => {
     expect(minifySqlUseCase("INSERT INTO t ( a , b )\nVALUES ( 1 , 2 ) ;\nSELECT 1 ;")).toBe("INSERT INTO t (a, b) VALUES (1, 2); SELECT 1;");
+  });
+});
+
+describe("joinLinesUseCase", () => {
+  it("une cualquier texto en una línea: sin saltos, sin sangría ni líneas vacías", () => {
+    expect(joinLinesUseCase("  uno\r\n\n    dos  tres\n\t cuatro  \n")).toBe("uno dos  tres cuatro");
+    expect(joinLinesUseCase('{\n  "a": 1,\n  "b": [\n')).toBe('{ "a": 1, "b": [');
   });
 });
 

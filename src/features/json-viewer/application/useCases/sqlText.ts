@@ -31,9 +31,16 @@ function literalAt(sql: string, i: number): number | null {
   return null;
 }
 
+/** Une las líneas de un tramo: cada salto (con la sangría que le sigue) pasa a ser un espacio. */
+function joinBreaks(piece: string): string {
+  return piece.replace(/[ \t]*\r?\n[ \t]*/g, " ");
+}
+
 /**
- * Deja la consulta en una sola línea: colapsa espacios y saltos de línea fuera de los
- * literales y convierte los comentarios `-- …` en `/* … *\/` para que no se coman el resto.
+ * Deja la consulta en una sola línea, sin ningún salto: colapsa espacios fuera de los literales,
+ * une también los saltos dentro de textos `'…'`, identificadores y comentarios `/* *\/`, y
+ * convierte los comentarios `-- …` en `/* … *\/` para que no se coman el resto. Solo los cuerpos
+ * `$$…$$` (código de funciones) se dejan intactos.
  */
 export function minifySqlUseCase(sql: string): string {
   let out = "";
@@ -56,7 +63,8 @@ export function minifySqlUseCase(sql: string): string {
       i = end === -1 ? sql.length : end;
     } else {
       const end = literalAt(sql, i) ?? i + 1;
-      emit(sql.slice(i, end));
+      const piece = sql.slice(i, end);
+      emit(char === "$" ? piece : joinBreaks(piece));
       i = end;
     }
   }
