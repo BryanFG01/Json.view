@@ -1,10 +1,18 @@
 import type { JsonValue } from "./json";
 
+export interface SqliteColumn {
+  name: string;
+  /** Tipo declarado (TEXT, INTEGER…); vacío si la columna no lo declara. */
+  type: string;
+  primaryKey: boolean;
+}
+
 export interface SqliteObject {
   name: string;
   type: "table" | "view";
   /** Número de filas (null si no se pudo contar, p. ej. una vista con error). */
   rows: number | null;
+  columns: SqliteColumn[];
 }
 
 export interface SqliteInfo {

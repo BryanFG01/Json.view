@@ -1,7 +1,7 @@
 // Adaptador del puerto ISqliteDatabase con sql.js (SQLite compilado a WebAssembly).
 // La librería y su .wasm (~690 KB) se cargan solo la primera vez que se abre una base.
 import type { Database, SqlJsStatic, Statement } from "sql.js";
-import type { ISqliteDatabase, SqliteInfo, SqliteObject, SqliteQueryResult } from "../../domain/models/sqlite";
+import type { ISqliteDatabase, SqliteColumn, SqliteInfo, SqliteObject, SqliteQueryResult } from "../../domain/models/sqlite";
 import { rowToJson, type SqliteCell } from "../../application/useCases/sqliteCells";
 import { applyWalUseCase, isWalMode } from "../../application/useCases/sqliteFile";
 
@@ -26,16 +26,32 @@ function readRow(statement: Statement): SqliteCell[] {
   return get.call(statement, null, { useBigInt: true });
 }
 
+/** Columnas de una tabla o vista (PRAGMA table_info: cid, name, type, notnull, dflt, pk). */
+function listColumns(db: Database, name: string): SqliteColumn[] {
+  try {
+    return (db.exec(`PRAGMA table_info(${quote(name)})`)[0]?.values ?? []).map((row) => ({
+      name: String(row[1]),
+      type: String(row[2] ?? ""),
+      primaryKey: Number(row[5]) > 0,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function countRows(db: Database, name: string): number | null {
+  try {
+    return Number(db.exec(`SELECT COUNT(*) FROM ${quote(name)}`)[0].values[0][0]);
+  } catch {
+    return null;
+  }
+}
+
 function listObjects(db: Database): SqliteObject[] {
   const [result] = db.exec("SELECT name, type FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY type, name");
-  return (result?.values ?? []).map(([name, type]) => {
-    let rows: number | null = null;
-    try {
-      rows = Number(db.exec(`SELECT COUNT(*) FROM ${quote(String(name))}`)[0].values[0][0]);
-    } catch {
-      rows = null;
-    }
-    return { name: String(name), type: type === "view" ? "view" : "table", rows };
+  return (result?.values ?? []).map(([rawName, type]) => {
+    const name = String(rawName);
+    return { name, type: type === "view" ? "view" : "table", rows: countRows(db, name), columns: listColumns(db, name) };
   });
 }
 

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { flutterLikeDb, makeZip, walDb } from "../test/fixtures";
-import { editorText, leftPane } from "./helpers";
+import { completions, editorText, leftPane } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -39,6 +39,49 @@ test("abre un .db de Flutter: tablas, filas como JSON, consulta propia y esquema
   await bar.getByRole("button", { name: "Esquema" }).click();
   await expect(pane.getByRole("button", { name: "Modo SQL" })).toHaveAttribute("aria-pressed", "true");
   await expect.poll(() => editorText(pane)).toContain("CREATE TABLE");
+});
+
+test("la consulta autocompleta tablas, columnas (con tipo) y alias según la base abierta", async ({ page }) => {
+  const pane = leftPane(page);
+  await pane.locator('input[type="file"]').setInputFiles({ name: "app.db", mimeType: "application/octet-stream", buffer: asBuffer(flutterLikeDb()) });
+  const bar = pane.getByRole("region", { name: "Base de datos SQLite" });
+  const query = bar.getByLabel("Consulta SQL");
+  const options = completions(page);
+  // CodeMirror ignora "aceptar" durante 75 ms tras abrir la lista (evita aceptar por error al teclear
+  // rápido); una persona no llega antes, Playwright sí: se espera un poco como lo haría el usuario.
+  const accept = async () => {
+    await page.waitForTimeout(150);
+    await page.keyboard.press("Enter");
+  };
+
+  // Tablas: al escribir "ped" se sugiere "pedidos" con su número de filas.
+  await query.click();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.press("Delete");
+  await page.keyboard.type("SELECT * FROM ped");
+  await expect(options.filter({ hasText: "pedidos" })).toContainText("tabla · 1 filas");
+  await accept();
+
+  // Columnas por alias: "c." sugiere las columnas de clientes con su tipo y PK.
+  await page.keyboard.type(" p JOIN clientes c ON c.");
+  await expect(options.filter({ hasText: /^id/ })).toContainText("INTEGER · PK");
+  await expect(options.filter({ hasText: "nombre" })).toContainText("TEXT");
+  await page.keyboard.type("i");
+  await accept();
+  await page.keyboard.type(" = p.cliente_id");
+
+  // Palabras clave en mayúsculas.
+  await page.keyboard.type(" whe");
+  await expect(options.filter({ hasText: "WHERE" }).first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Backspace");
+
+  await page.keyboard.press("ControlOrMeta+Enter");
+  await expect(bar.getByRole("status")).toContainText("1 fila");
+  await expect.poll(async () => (await query.textContent()) ?? "").toBe("SELECT * FROM pedidos p JOIN clientes c ON c.id = p.cliente_id");
 });
 
 test("abre un .zip con el .db y su .db-wal (base en modo WAL) y recupera todos los datos", async ({ page }) => {

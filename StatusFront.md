@@ -42,6 +42,7 @@ Arquitectura: `src/features/<feature>/{domain,application,presentation}` — los
 | | `useJsonDocument` | Estado de un panel (historial, parseo, vista, sangría, acciones) |
 | | `useJsonEditor` → `useCodeMirror` | Monta CodeMirror como vista controlada por React; ir al error |
 | presentation/workers | `sqlFormat.worker.ts` + `utils/backgroundSqlFormatter.ts` | Formateo SQL en un Web Worker (uno por panel), cancelable: la página no se congela con scripts grandes |
+| | `useQueryEditor` + `editor/cmQueryEditor.ts` + `utils/sqlSchema.ts` | Caja de consulta SQLite (CodeMirror) con autocompletado del esquema de la base: tablas/vistas (nº de filas), columnas (tipo, PK), alias, palabras clave |
 | | `useSqliteSource` | Subidas del panel y base SQLite abierta: tablas, consulta (Ctrl+Enter), esquema; resultados como JSON en el editor. Es el punto de composición que instancia el adaptador de infraestructura (no hay Server Actions: todo es local) |
 | | `useSqlNormalized` | Formatea en segundo plano las dos consultas al comparar SQL |
 | | `useSqlMode` | Modo JSON/SQL del panel, dialecto y formateo SQL (el error se descarta solo al editar) |
@@ -88,7 +89,7 @@ App: `src/app/layout.tsx` (metadata, fuentes Geist, tema), `src/app/page.tsx` (m
 - Comparar: diferencias lado a lado (rojo = quitado, verde = agregado, rayado = sin línea), contador +/−, selector de orden de claves (original / A→Z / Z→A) y "Ordenar arrays" (solo afecta a la vista, no a los textos), Esc para salir.
 - Vista en árbol con `<details>/<summary>` (colapsar sin JS extra) y colores por tipo.
 - Subir archivo, arrastrar y soltar, descargar, copiar. Acepta `.json`, `.txt` y **scripts SQL** (`.sql`, `.ddl`, `.dml`, `.pgsql`, `.psql`: SSMS "Generar scripts", mysqldump, pg_dump). Lee bien **UTF-16** (lo que guarda SSMS por defecto), UTF-8 y ANSI (tildes y ñ correctas).
-- **Bases SQLite** (`.db` de Flutter/sqflite, Drift, Android; `.sqlite`, `.sqlite3`, `.db3`), sueltas o dentro de un **`.zip`**, con su **`.db-wal`** (se suben juntos o en el zip): barra con nombre · tablas · vistas · versión (`user_version`) · tamaño; selector de tablas con nº de filas (muestra las primeras 1.000 como JSON); consulta propia con Ctrl+Enter (hasta 10.000 filas); "Esquema" (CREATE formateados). Los resultados quedan como JSON en el panel: Árbol, Ordenar, Buscar y **Comparar dos bases** (una por panel) funcionan. Avisos: base WAL sin su `-wal` ("pueden faltar los últimos cambios"), `-wal` suelto, binario no soportado (cifrada/SQLCipher, `.bak`/`.mdf`). El archivo original nunca se modifica y nada sale del navegador. No soporta: SQLCipher, Hive, Isar.
+- **Bases SQLite** (`.db` de Flutter/sqflite, Drift, Android; `.sqlite`, `.sqlite3`, `.db3`), sueltas o dentro de un **`.zip`**, con su **`.db-wal`** (se suben juntos o en el zip): barra con nombre · tablas · vistas · versión (`user_version`) · tamaño; selector de tablas con nº de filas (muestra las primeras 1.000 como JSON); consulta propia con Ctrl+Enter (hasta 10.000 filas) y **autocompletado basado en la base subida**: tablas y vistas (con nº de filas), columnas con tipo y PK (también por alias: `c.` → columnas de `clientes c`; las de la tabla elegida sin prefijo), palabras clave de SQLite en mayúsculas; Tab/Enter acepta, Ctrl+Espacio abre; "Esquema" (CREATE formateados). Los resultados quedan como JSON en el panel: Árbol, Ordenar, Buscar y **Comparar dos bases** (una por panel) funcionan. Avisos: base WAL sin su `-wal` ("pueden faltar los últimos cambios"), `-wal` suelto, binario no soportado (cifrada/SQLCipher, `.bak`/`.mdf`). El archivo original nunca se modifica y nada sale del navegador. No soporta: SQLCipher, Hive, Isar.
 - **Scripts SQL grandes**: el formateo corre en segundo plano (≈4 s por MB) con "Formateando SQL… Cancelar" en la barra de estado y la página sigue respondiendo; si se edita mientras tanto, no se pisa el texto. Por encima de ~500 KB, al pegar no se formatea solo (botón Formatear); por encima de ~1 MB solo se prueban el dialecto elegido y el detectado.
 - Compartir: el JSON va comprimido (deflate) en el `#hash`, que el navegador no envía al servidor.
 - Deshacer/rehacer (Ctrl+Z / Ctrl+Y), Tab indenta, Shift+Alt+F formatea.
@@ -159,7 +160,7 @@ E2E levanta su propio build en el puerto 3210 (no choca con `next dev`). Captura
 
 ## Verificación (última ejecución: 2026-10-06)
 - `npx tsc --noEmit -p .` ✔ · `npx eslint src e2e` ✔ · `npm run build` ✔
-- `npm test`: 105/105 ✔ · `npm run test:e2e`: 34/34 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
+- `npm test`: 107/107 ✔ · `npm run test:e2e`: 35/35 ✔ (en `e2e/editor`, `navigation`, `search`, `sql`, `panels`, `files`) · `npm run test:perf`: 4/4 ✔ (hasta 1 M de líneas)
 - Publicación: Vercel despliega desde `main` de GitHub (`BryanFG01/Json.view`). Lo que no está commiteado y pusheado no se publica (p. ej. el favicon `src/app/icon.png`).
 - Sin hooks de React en `.tsx` ✔ · ningún archivo > 200 líneas ✔
 - Dev: `npm run dev` (corre en http://localhost:3001).

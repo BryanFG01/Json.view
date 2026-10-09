@@ -55,6 +55,15 @@ test("copia solo un bloque desde el editor y un nodo desde el árbol", async ({ 
   await expect.poll(clipboard).toBe("JSON Viewer");
 });
 
+test("el icono de GitHub enlaza al repositorio en una pestaña nueva", async ({ page }) => {
+  const link = page.getByRole("link", { name: "Código en GitHub" });
+  await expect(link).toHaveAttribute("href", "https://github.com/BryanFG01/Json.view");
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  await link.hover();
+  await expect(page.getByRole("tooltip")).toContainText("BryanFG01/Json.view");
+});
+
 test("los iconos muestran rápido un tooltip que explica qué hacen", async ({ page }) => {
   const pane = leftPane(page);
   const tooltip = page.getByRole("tooltip");

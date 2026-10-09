@@ -1,4 +1,6 @@
 import { Braces, Columns2, GitCompareArrows, Lock, Moon, Sun, type LucideIcon } from "lucide-react";
+import { GithubMark } from "@/shared/components/GithubMark";
+import { REPO_URL } from "@/shared/config/links";
 import type { Theme } from "@/shared/theme/theme";
 import { tipAttrs, type Tip } from "@/shared/tooltip/tip";
 import { TIPS } from "../utils/tooltips.constants";
@@ -48,12 +50,22 @@ export function AppBar(vm: AppBarProps) {
       <span className="ml-auto hidden items-center gap-1.5 text-xs text-muted lg:flex">
         <Lock className="size-3.5" /> Todo se procesa en tu navegador
       </span>
+      <a
+        href={REPO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={TIPS.repo.title}
+        {...tipAttrs(TIPS.repo)}
+        className="ml-auto grid size-8 shrink-0 place-items-center rounded text-muted hover:bg-hover hover:text-fg lg:ml-0"
+      >
+        <GithubMark className="size-4" />
+      </a>
       <button
         type="button"
         onClick={vm.toggleTheme}
         aria-label={TIPS.theme.title}
         {...tipAttrs(TIPS.theme)}
-        className="ml-auto grid size-8 shrink-0 place-items-center rounded text-muted hover:bg-hover hover:text-fg lg:ml-0"
+        className="grid size-8 shrink-0 place-items-center rounded text-muted hover:bg-hover hover:text-fg"
       >
         {vm.theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
       </button>

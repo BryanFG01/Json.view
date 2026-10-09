@@ -65,6 +65,7 @@ export const TIPS = {
   redo: { title: "Rehacer", desc: "Repite lo que deshiciste.", keys: "Ctrl+Y", disabledHint: "No hay nada que rehacer." },
   split: { title: "Dividir pantalla", desc: "Abre un segundo panel para trabajar con dos JSON a la vez." },
   compare: { title: "Comparar", desc: "Muestra las diferencias línea a línea entre el panel izquierdo y el derecho.", keys: "Esc para salir" },
+  repo: { title: "Código en GitHub", desc: "Abre el repositorio BryanFG01/Json.view en una pestaña nueva." },
   theme: { title: "Cambiar tema", desc: "Alterna entre tema claro y oscuro. Se recuerda para la próxima vez." },
   expandAll: { title: "Expandir todo", desc: "Abre todos los niveles del árbol (en listas grandes, el primer grupo de 100)." },
   collapseAll: { title: "Colapsar todo", desc: "Cierra todos los nodos y deja solo el primer nivel." },

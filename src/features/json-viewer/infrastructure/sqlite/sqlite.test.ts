@@ -9,12 +9,23 @@ describe("abrir una base SQLite como la de Flutter", () => {
   it("lista tablas y vistas con su número de filas y la versión del esquema", async () => {
     const db = await openSqliteDatabase("app.db", flutterLikeDb(), null);
     expect(db.info()).toMatchObject({ fileName: "app.db", userVersion: 3, walMode: false });
-    expect(db.info().objects).toEqual([
+    expect(db.info().objects.map(({ name, type, rows }) => ({ name, type, rows }))).toEqual([
       { name: "android_metadata", type: "table", rows: 1 },
       { name: "clientes", type: "table", rows: 2 },
       { name: "pedidos", type: "table", rows: 1 },
       { name: "v_resumen", type: "view", rows: 2 },
     ]);
+  });
+
+  it("incluye las columnas de cada tabla y vista (para el autocompletado)", async () => {
+    const db = await openSqliteDatabase("app.db", flutterLikeDb(), null);
+    const byName = Object.fromEntries(db.info().objects.map((o) => [o.name, o.columns]));
+    expect(byName.clientes).toEqual([
+      { name: "id", type: "INTEGER", primaryKey: true },
+      { name: "nombre", type: "TEXT", primaryKey: false },
+      { name: "saldo", type: "REAL", primaryKey: false },
+    ]);
+    expect(byName.v_resumen.map((c) => c.name)).toEqual(["nombre", "pedidos"]);
   });
 
   it("consulta a JSON: tildes, BLOB en base64 y enteros grandes sin perder precisión", async () => {
@@ -38,7 +49,7 @@ describe("abrir una base SQLite como la de Flutter", () => {
     const without = await openSqliteDatabase("live.db", db, null);
     expect(without.info().objects).toEqual([]);
     const withWal = await openSqliteDatabase("live.db", db, wal);
-    expect(withWal.info().objects).toEqual([{ name: "t", type: "table", rows: 3000 }]);
+    expect(withWal.info().objects).toMatchObject([{ name: "t", type: "table", rows: 3000 }]);
     expect(withWal.info().walPagesApplied).toBeGreaterThan(0);
     expect(withWal.query("PRAGMA integrity_check", 1).rows).toEqual([{ integrity_check: "ok" }]);
   });

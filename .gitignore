@@ -44,3 +44,8 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# instrucciones para asistentes de IA (solo locales, no se publican)
+CLAUDE.md
+AGENTS.md
+.claude/

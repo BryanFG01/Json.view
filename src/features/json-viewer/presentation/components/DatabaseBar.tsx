@@ -4,6 +4,7 @@ import { Database, FileCode2, Play, X } from "lucide-react";
 import { tipAttrs } from "@/shared/tooltip/tip";
 import type { useSqliteSource } from "../hooks/useSqliteSource";
 import { TIPS } from "../utils/tooltips.constants";
+import { QueryEditor } from "./QueryEditor";
 
 type SqliteSourceVM = ReturnType<typeof useSqliteSource>;
 
@@ -36,16 +37,7 @@ export function DatabaseBar({ vm }: { vm: SqliteSourceVM }) {
         </button>
       </div>
       <div className="flex items-start gap-1.5">
-        <textarea
-          aria-label="Consulta SQL"
-          value={vm.query}
-          onChange={(e) => vm.setQuery(e.target.value)}
-          onKeyDown={vm.onQueryKeyDown}
-          rows={2}
-          spellCheck={false}
-          placeholder="SELECT * FROM tabla WHERE … (Ctrl+Enter para ejecutar)"
-          className="min-w-0 flex-1 resize-y rounded border border-border bg-bg px-2 py-1 font-mono text-[12px] text-fg outline-none focus-visible:border-accent"
-        />
+        <QueryEditor value={vm.query} objects={vm.schemaObjects} defaultTable={vm.table} onChange={vm.setQuery} onRun={vm.runSql} />
         <button type="button" onClick={vm.runQuery} {...tipAttrs(TIPS.dbRun)} className="flex items-center gap-1 rounded bg-accent px-2.5 py-1.5 font-semibold text-white hover:opacity-90">
           <Play className="size-3.5" /> Ejecutar
         </button>

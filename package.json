@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:perf": "playwright test --config playwright.perf.config.ts",
-    "postinstall": "node scripts/copy-sqljs-wasm.mjs"
+    "postinstall": "node scripts/copy-sqljs-wasm.mjs",
+    "docs:screenshots": "npx tsx scripts/readme-screenshots.mts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

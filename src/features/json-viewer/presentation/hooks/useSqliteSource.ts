@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { JsonValue } from "../../domain/models/json";
 import type { ISqliteDatabase, SqliteInfo } from "../../domain/models/sqlite";
 import { classifyUploadUseCase } from "../../application/useCases/classifyUpload";
@@ -16,6 +16,8 @@ interface SqliteSourceParams {
 }
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
+/** Referencia estable cuando no hay base (evita recalcular el esquema del autocompletado). */
+const EMPTY_OBJECTS: SqliteInfo["objects"] = [];
 
 /**
  * Subidas del panel y base SQLite abierta (Flutter/sqflite, Drift, Android…). Las tablas y
@@ -88,16 +90,16 @@ export function useSqliteSource({ loadText, showJson, showSql }: SqliteSourcePar
     objects: (info?.objects ?? []).map((o) => ({ value: o.name, label: objectLabel(o) })),
     table,
     selectTable,
+    /** Tablas y vistas con sus columnas: alimentan el autocompletado de la consulta. */
+    schemaObjects: info?.objects ?? EMPTY_OBJECTS,
     query,
     setQuery,
     result,
     runQuery: () => run(query),
-    /** Ctrl+Enter (o Cmd+Enter) ejecuta la consulta. */
-    onQueryKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault();
-        run(query);
-      }
+    /** Ctrl+Enter desde el editor de la consulta: ejecuta exactamente lo escrito. */
+    runSql: (sql: string) => {
+      setQuery(sql);
+      run(sql);
     },
     showSchema: () => {
       if (dbRef.current) showSql(dbRef.current.schema());
